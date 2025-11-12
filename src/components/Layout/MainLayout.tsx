@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import UploadZone from '../UploadZone/UploadZone';
+import Viewport from '../Viewport/Viewport';
 
 const MainLayout: React.FC = () => {
   return (
@@ -50,49 +51,13 @@ const MainLayout: React.FC = () => {
           }}
         >
           {/* Sagittal Viewport */}
-          <Box
-            sx={{
-              backgroundColor: 'black',
-              border: 1,
-              borderColor: 'divider',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'grey.600',
-            }}
-          >
-            Sagittal View
-          </Box>
+          <Viewport orientation="sagittal" />
 
           {/* Axial Viewport */}
-          <Box
-            sx={{
-              backgroundColor: 'black',
-              border: 1,
-              borderColor: 'divider',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'grey.600',
-            }}
-          >
-            Axial View
-          </Box>
+          <Viewport orientation="axial" />
 
           {/* Coronal Viewport */}
-          <Box
-            sx={{
-              backgroundColor: 'black',
-              border: 1,
-              borderColor: 'divider',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'grey.600',
-            }}
-          >
-            Coronal View
-          </Box>
+          <Viewport orientation="coronal" />
         </Box>
       </Box>
     </Box>
