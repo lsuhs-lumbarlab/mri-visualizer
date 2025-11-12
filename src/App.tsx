@@ -1,5 +1,7 @@
+import MainLayout from './components/Layout/MainLayout'
+
 function App() {
-  return <div>MRI Visualizer - Setup in Progress</div>
+  return <MainLayout />
 }
 
 export default App
