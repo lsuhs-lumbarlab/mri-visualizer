@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
+import UploadZone from '../UploadZone/UploadZone';
 
 const MainLayout: React.FC = () => {
   return (
@@ -16,7 +17,7 @@ const MainLayout: React.FC = () => {
       >
         <Box sx={{ p: 2 }}>
           <h2>Study Explorer</h2>
-          <p>Placeholder for study tree</p>
+          <UploadZone />
         </Box>
       </Box>
 
