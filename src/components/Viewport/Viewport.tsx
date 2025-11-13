@@ -50,25 +50,46 @@ const Viewport: React.FC<ViewportProps> = ({ orientation }) => {
   useEffect(() => {
     if (!selectedSeries || !isEnabledRef.current) return;
 
-    const viewportId = `viewport-${orientation}`;
-    const renderingEngine = getRenderingEngine();
-    const viewport = renderingEngine.getViewport(viewportId) as IStackViewport;
+    const loadImages = async () => {
+      const viewportId = `viewport-${orientation}`;
+      const renderingEngine = getRenderingEngine();
+      const viewport = renderingEngine.getViewport(viewportId) as IStackViewport;
 
-    if (!viewport) return;
+      if (!viewport) {
+        console.error(`Viewport ${viewportId} not found`);
+        return;
+      }
 
-    const imageIds = selectedSeries.images.map((img) => img.imageId);
+      const imageIds = selectedSeries.images.map((img) => img.imageId);
 
-    // Load the stack
-    viewport.setStack(imageIds, 0);
-    viewport.render();
+      console.log(`Setting stack with ${imageIds.length} images for ${orientation}`);
+      console.log(`First 2 imageIds:`, imageIds.slice(0, 2));
 
-    // Update viewport info
-    updateViewportInfo(orientation, {
-      totalSlices: imageIds.length,
-      currentSlice: 0,
-    });
+      try {
+        // Update viewport info immediately so UI updates
+        updateViewportInfo(orientation, {
+          totalSlices: imageIds.length,
+          currentSlice: 0,
+        });
 
-    console.log(`Loaded ${imageIds.length} images into ${orientation} viewport`);
+        // Set the stack (this loads the first image)
+        await viewport.setStack(imageIds);
+        console.log(`Stack set successfully for ${orientation}`);
+        
+        // Set to first image explicitly
+        await viewport.setImageIdIndex(0);
+        console.log(`Set to image index 0`);
+        
+        // Force render
+        viewport.render();
+        console.log(`Viewport rendered for ${orientation}`);
+        
+      } catch (error) {
+        console.error(`Error loading stack for ${orientation}:`, error);
+      }
+    };
+
+    loadImages();
   }, [selectedSeries, orientation, updateViewportInfo]);
 
   // Handle slice navigation
@@ -104,6 +125,7 @@ const Viewport: React.FC<ViewportProps> = ({ orientation }) => {
         sx={{
           flex: 1,
           width: '100%',
+          minHeight: 0,
           position: 'relative',
         }}
       />
