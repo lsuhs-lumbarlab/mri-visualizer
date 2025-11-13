@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Box, Typography, Slider } from '@mui/material';
-import { RenderingEngine, Enums, Types } from '@cornerstonejs/core';
+import { Enums, Types } from '@cornerstonejs/core';
 import type { IStackViewport } from '@cornerstonejs/core/types';
 import { useDicomStore } from '@/store/dicomStore';
-import { initCornerstone } from '@/services/cornerstone/initCornerstone';
+import { getRenderingEngine } from '@/services/cornerstone/renderingEngineService';
 
 interface ViewportProps {
   orientation: 'sagittal' | 'axial' | 'coronal';
@@ -11,36 +11,18 @@ interface ViewportProps {
 
 const Viewport: React.FC<ViewportProps> = ({ orientation }) => {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const renderingEngineRef = useRef<RenderingEngine | null>(null);
-  const [isInitialized, setIsInitialized] = React.useState(false);
+  const isEnabledRef = useRef(false);
   
   const selectedSeries = useDicomStore((state) => state.selectedSeries[orientation]);
   const viewportInfo = useDicomStore((state) => state.viewportInfo[orientation]);
   const updateViewportInfo = useDicomStore((state) => state.updateViewportInfo);
 
-  // Initialize Cornerstone
+  // Initialize viewport
   useEffect(() => {
-    const init = async () => {
-      try {
-        await initCornerstone();
-        setIsInitialized(true);
-      } catch (error) {
-        console.error('Failed to initialize Cornerstone:', error);
-      }
-    };
-    init();
-  }, []);
+    if (!viewportRef.current || isEnabledRef.current) return;
 
-  // Initialize rendering engine and viewport
-  useEffect(() => {
-    if (!isInitialized || !viewportRef.current) return;
-
-    const renderingEngineId = `renderingEngine-${orientation}`;
     const viewportId = `viewport-${orientation}`;
-
-    // Create rendering engine
-    const renderingEngine = new RenderingEngine(renderingEngineId);
-    renderingEngineRef.current = renderingEngine;
+    const renderingEngine = getRenderingEngine();
 
     // Define viewport
     const viewportInput: Types.PublicViewportInput = {
@@ -50,18 +32,27 @@ const Viewport: React.FC<ViewportProps> = ({ orientation }) => {
     };
 
     renderingEngine.enableElement(viewportInput);
+    isEnabledRef.current = true;
 
     return () => {
-      renderingEngine.destroy();
+      if (isEnabledRef.current) {
+        try {
+          renderingEngine.disableElement(viewportId);
+        } catch (error) {
+          // Viewport may already be disabled
+        }
+        isEnabledRef.current = false;
+      }
     };
-  }, [isInitialized, orientation]);
+  }, [orientation]);
 
   // Load images when series is selected
   useEffect(() => {
-    if (!selectedSeries || !renderingEngineRef.current) return;
+    if (!selectedSeries || !isEnabledRef.current) return;
 
     const viewportId = `viewport-${orientation}`;
-    const viewport = renderingEngineRef.current.getViewport(viewportId) as IStackViewport;
+    const renderingEngine = getRenderingEngine();
+    const viewport = renderingEngine.getViewport(viewportId) as IStackViewport;
 
     if (!viewport) return;
 
@@ -82,11 +73,12 @@ const Viewport: React.FC<ViewportProps> = ({ orientation }) => {
 
   // Handle slice navigation
   const handleSliceChange = (_event: Event, value: number | number[]) => {
-    if (!renderingEngineRef.current) return;
+    if (!isEnabledRef.current) return;
 
     const sliceIndex = value as number;
     const viewportId = `viewport-${orientation}`;
-    const viewport = renderingEngineRef.current.getViewport(viewportId) as IStackViewport;
+    const renderingEngine = getRenderingEngine();
+    const viewport = renderingEngine.getViewport(viewportId) as IStackViewport;
 
     if (viewport) {
       viewport.setImageIdIndex(sliceIndex);

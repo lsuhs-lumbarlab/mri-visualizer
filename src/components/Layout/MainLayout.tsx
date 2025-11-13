@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import UploadZone from '../UploadZone/UploadZone';
 import Viewport from '../Viewport/Viewport';
+import StudyExplorer from '../StudyExplorer/StudyExplorer';
 
 const MainLayout: React.FC = () => {
   return (
@@ -16,9 +17,21 @@ const MainLayout: React.FC = () => {
           overflow: 'auto',
         }}
       >
-        <Box sx={{ p: 2 }}>
-          <h2>Study Explorer</h2>
-          <UploadZone />
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* Header */}
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h6">Study Explorer</Typography>
+          </Box>
+          
+          {/* Upload Zone */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <UploadZone />
+          </Box>
+          
+          {/* Study List */}
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <StudyExplorer />
+          </Box>
         </Box>
       </Box>
 
