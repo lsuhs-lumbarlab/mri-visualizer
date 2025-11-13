@@ -17,6 +17,18 @@ export async function parseDicomFiles(files: File[]): Promise<DicomStudy[]> {
       const studyUID = dataset.StudyInstanceUID || 'unknown-study';
       const seriesUID = dataset.SeriesInstanceUID || 'unknown-series';
 
+      // Extract patient name - handle both string and object formats
+      let patientName = 'Unknown Patient';
+      if (dataset.PatientName) {
+        if (typeof dataset.PatientName === 'string') {
+          patientName = dataset.PatientName;
+        } else if (dataset.PatientName.Alphabetic) {
+          patientName = dataset.PatientName.Alphabetic;
+        } else if (typeof dataset.PatientName === 'object') {
+          patientName = JSON.stringify(dataset.PatientName);
+        }
+      }
+
       // Get or create study
       if (!studiesMap.has(studyUID)) {
         studiesMap.set(studyUID, {
@@ -24,7 +36,7 @@ export async function parseDicomFiles(files: File[]): Promise<DicomStudy[]> {
           studyDate: dataset.StudyDate || '',
           studyTime: dataset.StudyTime || '',
           studyDescription: dataset.StudyDescription || 'Unknown Study',
-          patientName: dataset.PatientName || 'Unknown Patient',
+          patientName: patientName,
           patientID: dataset.PatientID || '',
           series: [],
         });
