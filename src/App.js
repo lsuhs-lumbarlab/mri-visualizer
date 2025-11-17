@@ -26,13 +26,21 @@ function App() {
     initCornerstone();
     setIsInitialized(true);
 
-    // Check if there are existing files in database
-    checkExistingFiles();
+    // Clear database on app start (don't persist across refreshes)
+    clearDatabase();
   }, []);
 
-  const checkExistingFiles = async () => {
-    const fileCount = await db.files.count();
-    setHasFiles(fileCount > 0);
+  const clearDatabase = async () => {
+    try {
+      await db.files.clear();
+      await db.series.clear();
+      await db.studies.clear();
+      await db.images.clear();
+      setHasFiles(false);
+      console.log('Database cleared on app start');
+    } catch (error) {
+      console.error('Error clearing database:', error);
+    }
   };
 
   const handleFilesSelected = async (files) => {
