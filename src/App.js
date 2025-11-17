@@ -100,29 +100,31 @@ function App() {
       <CssBaseline />
       <MainLayout
         header={<Header onOpenFiles={handleFilesSelected} />}
-        sidebar={hasFiles ? <StudyExplorer onSeriesSelect={handleSeriesSelect} /> : null}
-        viewports={
+        sidebar={
           hasFiles ? (
-            <Box display="flex" gap={1} flex={1}>
-              <CornerstoneViewport
-                imageIds={viewportData.sagittal.imageIds}
-                orientation="SAGITTAL"
-                seriesDescription={viewportData.sagittal.seriesDescription}
-              />
-              <CornerstoneViewport
-                imageIds={viewportData.axial.imageIds}
-                orientation="AXIAL"
-                seriesDescription={viewportData.axial.seriesDescription}
-              />
-              <CornerstoneViewport
-                imageIds={viewportData.coronal.imageIds}
-                orientation="CORONAL"
-                seriesDescription={viewportData.coronal.seriesDescription}
-              />
-            </Box>
+            <StudyExplorer onSeriesSelect={handleSeriesSelect} />
           ) : (
             <FileUploader onFilesSelected={handleFilesSelected} />
           )
+        }
+        viewports={
+          <Box display="flex" gap={1} flex={1}>
+            <CornerstoneViewport
+              imageIds={viewportData.sagittal.imageIds}
+              orientation="SAGITTAL"
+              seriesDescription={viewportData.sagittal.seriesDescription}
+            />
+            <CornerstoneViewport
+              imageIds={viewportData.axial.imageIds}
+              orientation="AXIAL"
+              seriesDescription={viewportData.axial.seriesDescription}
+            />
+            <CornerstoneViewport
+              imageIds={viewportData.coronal.imageIds}
+              orientation="CORONAL"
+              seriesDescription={viewportData.coronal.seriesDescription}
+            />
+          </Box>
         }
       />
       {isLoading && (
