@@ -23,6 +23,7 @@ const useStyles = makeStyles((theme) => ({
   viewportArea: {
     flex: 1,
     display: 'flex',
+    flexDirection: 'row',
     padding: theme.spacing(1),
     gap: theme.spacing(1),
   },

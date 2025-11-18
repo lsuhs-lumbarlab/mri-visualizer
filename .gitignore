@@ -23,11 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # IDE and Editor files
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
+
 *.swp
 *.swo
 *~

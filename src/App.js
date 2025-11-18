@@ -107,25 +107,26 @@ function App() {
             <FileUploader onFilesSelected={handleFilesSelected} />
           )
         }
-        viewports={
-          <Box display="flex" gap={1} flex={1}>
-            <CornerstoneViewport
-              imageIds={viewportData.sagittal.imageIds}
-              orientation="SAGITTAL"
-              seriesDescription={viewportData.sagittal.seriesDescription}
-            />
-            <CornerstoneViewport
-              imageIds={viewportData.axial.imageIds}
-              orientation="AXIAL"
-              seriesDescription={viewportData.axial.seriesDescription}
-            />
-            <CornerstoneViewport
-              imageIds={viewportData.coronal.imageIds}
-              orientation="CORONAL"
-              seriesDescription={viewportData.coronal.seriesDescription}
-            />
-          </Box>
-        }
+        viewports={[
+          <CornerstoneViewport
+            key="sagittal"
+            imageIds={viewportData.sagittal.imageIds}
+            orientation="SAGITTAL"
+            seriesDescription={viewportData.sagittal.seriesDescription}
+          />,
+          <CornerstoneViewport
+            key="axial"
+            imageIds={viewportData.axial.imageIds}
+            orientation="AXIAL"
+            seriesDescription={viewportData.axial.seriesDescription}
+          />,
+          <CornerstoneViewport
+            key="coronal"
+            imageIds={viewportData.coronal.imageIds}
+            orientation="CORONAL"
+            seriesDescription={viewportData.coronal.seriesDescription}
+          />
+        ]}
       />
       {isLoading && (
         <Box
