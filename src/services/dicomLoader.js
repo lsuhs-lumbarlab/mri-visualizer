@@ -4,6 +4,56 @@ import dicomParser from 'dicom-parser';
 import db from '../database/db';
 
 /**
+ * Check if a file is a DICOM file by reading its header
+ * DICOM files have 'DICM' at bytes 128-131
+ */
+export const isDicomFile = async (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const arrayBuffer = e.target.result;
+        const byteArray = new Uint8Array(arrayBuffer);
+        
+        // Check for DICOM magic number 'DICM' at offset 128
+        if (byteArray.length >= 132) {
+          const dicm = String.fromCharCode(
+            byteArray[128],
+            byteArray[129],
+            byteArray[130],
+            byteArray[131]
+          );
+          
+          if (dicm === 'DICM') {
+            resolve(true);
+            return;
+          }
+        }
+        
+        // Try parsing as DICOM (some files may not have the preamble)
+        try {
+          dicomParser.parseDicom(byteArray);
+          resolve(true);
+          return;
+        } catch (e) {
+          // Not a valid DICOM file
+        }
+        
+        resolve(false);
+      } catch (error) {
+        resolve(false);
+      }
+    };
+    
+    reader.onerror = () => resolve(false);
+    
+    // Read first 1KB to check header
+    reader.readAsArrayBuffer(file.slice(0, 1024));
+  });
+};
+
+/**
  * Load DICOM file and extract metadata
  */
 export const loadDicomFile = async (file) => {

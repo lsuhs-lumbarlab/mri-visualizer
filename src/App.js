@@ -8,7 +8,7 @@ import StudyExplorer from './components/StudyExplorer/StudyExplorer';
 import CornerstoneViewport from './components/Viewport/CornerstoneViewport';
 import FileUploader from './components/FileUpload/FileUploader';
 import { initCornerstone } from './services/cornerstoneInit';
-import { loadDicomFile, loadSeriesImageStack } from './services/dicomLoader';
+import { loadDicomFile, loadSeriesImageStack, isDicomFile } from './services/dicomLoader';
 import db from './database/db';
 
 function App() {
@@ -47,12 +47,22 @@ function App() {
     setIsLoading(true);
     try {
       // Load all DICOM files
+      let loadedCount = 0;
       for (const file of files) {
-        if (file.name.toLowerCase().endsWith('.dcm')) {
+        // Check if file is DICOM by content, not just extension
+        const isDicom = await isDicomFile(file);
+        if (isDicom) {
           await loadDicomFile(file);
+          loadedCount++;
         }
       }
-      setHasFiles(true);
+      
+      if (loadedCount > 0) {
+        setHasFiles(true);
+        console.log(`Loaded ${loadedCount} DICOM file(s)`);
+      } else {
+        alert('No valid DICOM files found in the selected files.');
+      }
     } catch (error) {
       console.error('Error loading files:', error);
       alert('Error loading DICOM files. Check console for details.');
