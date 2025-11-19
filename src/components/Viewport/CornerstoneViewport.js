@@ -10,7 +10,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    minWidth: 300,
+    minWidth: '33%',
   },
   viewportWrapper: {
     position: 'relative',

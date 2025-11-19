@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden',
   },
   sidebar: {
-    width: 300,
+    width: 200,
     borderRight: `1px solid ${theme.palette.divider}`,
     overflow: 'auto',
     backgroundColor: theme.palette.background.paper,
