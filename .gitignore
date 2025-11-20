@@ -64,3 +64,7 @@ lerna-debug.log*
 
 # Test files
 *.test.js.snap
+
+# ai-digest
+.aidigestignore
+codebase.md
