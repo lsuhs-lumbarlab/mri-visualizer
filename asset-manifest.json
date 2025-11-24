@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/mri-visualizer/static/css/main.e6c13ad2.css",
+    "main.js": "/mri-visualizer/static/js/main.ff53d3a5.js",
+    "index.html": "/mri-visualizer/index.html",
+    "main.e6c13ad2.css.map": "/mri-visualizer/static/css/main.e6c13ad2.css.map",
+    "main.ff53d3a5.js.map": "/mri-visualizer/static/js/main.ff53d3a5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.ff53d3a5.js"
+  ]
+}
