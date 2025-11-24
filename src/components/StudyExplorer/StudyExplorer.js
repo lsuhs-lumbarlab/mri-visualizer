@@ -29,25 +29,33 @@ const StudyExplorer = ({ onSeriesSelect }) => {
   const [selectedSeries, setSelectedSeries] = useState({});
 
   useEffect(() => {
+    // Load studies whenever component mounts
     loadStudies();
-  }, []);
+  }, []); // Empty dependency array means this runs on mount
 
   const loadStudies = async () => {
-    const allStudies = await db.studies.toArray();
-    const studiesWithSeries = await Promise.all(
-      allStudies.map(async (study) => {
-        const series = await db.series
-          .where('studyInstanceUID')
-          .equals(study.studyInstanceUID)
-          .toArray();
-        return { ...study, series };
-      })
-    );
-    setStudies(studiesWithSeries);
-    
-    // Auto-expand first study
-    if (studiesWithSeries.length > 0) {
-      setOpenStudies({ [studiesWithSeries[0].studyInstanceUID]: true });
+    try {
+      const allStudies = await db.studies.toArray();
+      const studiesWithSeries = await Promise.all(
+        allStudies.map(async (study) => {
+          const series = await db.series
+            .where('studyInstanceUID')
+            .equals(study.studyInstanceUID)
+            .toArray();
+          return { ...study, series };
+        })
+      );
+      setStudies(studiesWithSeries);
+      
+      // Auto-expand first study
+      if (studiesWithSeries.length > 0) {
+        setOpenStudies({ [studiesWithSeries[0].studyInstanceUID]: true });
+      }
+      
+      // Reset selected series
+      setSelectedSeries({});
+    } catch (error) {
+      console.error('Error loading studies:', error);
     }
   };
 

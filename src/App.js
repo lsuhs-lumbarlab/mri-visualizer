@@ -15,6 +15,7 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFiles, setHasFiles] = useState(false);
+  const [viewportKey, setViewportKey] = useState(0); // Add key for remounting viewports
   const [viewportData, setViewportData] = useState({
     sagittal: { imageIds: [], seriesDescription: '' },
     axial: { imageIds: [], seriesDescription: '' },
@@ -37,15 +38,36 @@ function App() {
       await db.studies.clear();
       await db.images.clear();
       setHasFiles(false);
-      console.log('Database cleared on app start');
+      console.log('Database cleared');
     } catch (error) {
       console.error('Error clearing database:', error);
     }
   };
 
+  const resetAppState = async () => {
+    // Clear database
+    await clearDatabase();
+    
+    // Reset viewport data
+    setViewportData({
+      sagittal: { imageIds: [], seriesDescription: '' },
+      axial: { imageIds: [], seriesDescription: '' },
+      coronal: { imageIds: [], seriesDescription: '' },
+    });
+    
+    // Increment key to force remount of viewports
+    setViewportKey(prev => prev + 1);
+    
+    console.log('App state reset complete');
+  };
+
   const handleFilesSelected = async (files) => {
     setIsLoading(true);
+    
     try {
+      // Clear everything first
+      await resetAppState();
+      
       // Load all DICOM files
       let loadedCount = 0;
       for (const file of files) {
@@ -112,26 +134,26 @@ function App() {
         header={<Header onOpenFiles={handleFilesSelected} />}
         sidebar={
           hasFiles ? (
-            <StudyExplorer onSeriesSelect={handleSeriesSelect} />
+            <StudyExplorer key={viewportKey} onSeriesSelect={handleSeriesSelect} />
           ) : (
             <FileUploader onFilesSelected={handleFilesSelected} />
           )
         }
         viewports={[
           <CornerstoneViewport
-            key="sagittal"
+            key={`sagittal-${viewportKey}`}
             imageIds={viewportData.sagittal.imageIds}
             orientation="SAGITTAL"
             seriesDescription={viewportData.sagittal.seriesDescription}
           />,
           <CornerstoneViewport
-            key="axial"
+            key={`axial-${viewportKey}`}
             imageIds={viewportData.axial.imageIds}
             orientation="AXIAL"
             seriesDescription={viewportData.axial.seriesDescription}
           />,
           <CornerstoneViewport
-            key="coronal"
+            key={`coronal-${viewportKey}`}
             imageIds={viewportData.coronal.imageIds}
             orientation="CORONAL"
             seriesDescription={viewportData.coronal.seriesDescription}

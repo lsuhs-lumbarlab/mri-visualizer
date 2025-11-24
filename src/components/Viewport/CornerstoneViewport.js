@@ -119,7 +119,18 @@ const CornerstoneViewport = ({
     });
 
     return () => {
-      cornerstone.disable(element);
+      // Cleanup: Remove event listeners and disable element
+      if (element) {
+        element.removeEventListener('cornerstoneimagerendered', updateViewportData);
+        element.removeEventListener('cornerstonetoolsstackscroll', () => {});
+        
+        // Clear cornerstone element
+        try {
+          cornerstone.disable(element);
+        } catch (error) {
+          console.warn('Error disabling viewport:', error);
+        }
+      }
     };
   }, [imageIds]);
 
