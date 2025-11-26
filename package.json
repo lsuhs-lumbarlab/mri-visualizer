@@ -1,5 +1,6 @@
 {
   "name": "mri-visualizer",
+  "homepage": "https://lsuhs-lumbarlab.github.io/mri-visualizer",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -37,7 +38,9 @@
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [
@@ -58,6 +61,7 @@
     ]
   },
   "devDependencies": {
+    "gh-pages": "^6.3.0",
     "react-app-rewired": "^2.2.1"
   }
 }
