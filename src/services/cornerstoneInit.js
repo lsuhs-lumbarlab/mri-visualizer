@@ -41,11 +41,10 @@ export const initCornerstone = () => {
   });
 
   // Add common tools
-  cornerstoneTools.addTool(cornerstoneTools.PanTool);
-  cornerstoneTools.addTool(cornerstoneTools.ZoomTool);
-  cornerstoneTools.addTool(cornerstoneTools.WwwcTool);
-  cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
-  cornerstoneTools.addTool(cornerstoneTools.StackScrollTool);
+  // cornerstoneTools.addTool(cornerstoneTools.PanTool);
+  // cornerstoneTools.addTool(cornerstoneTools.ZoomTool);
+  // cornerstoneTools.addTool(cornerstoneTools.WwwcTool);
+  // cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
 
   isInitialized = true;
   console.log('Cornerstone initialized successfully');
@@ -59,9 +58,9 @@ export const enableViewportTools = (element) => {
   cornerstoneTools.addToolForElement(element, cornerstoneTools.StackScrollMouseWheelTool);
   
   // Activate tools with mouse button bindings
-  cornerstoneTools.setToolActiveForElement(element, 'Pan', { mouseButtonMask: 1 }); // Left click
-  cornerstoneTools.setToolActiveForElement(element, 'Zoom', { mouseButtonMask: 4 }); // Middle click
+  cornerstoneTools.setToolActiveForElement(element, 'Zoom', { mouseButtonMask: 1 }); // Left click
   cornerstoneTools.setToolActiveForElement(element, 'Wwwc', { mouseButtonMask: 2 }); // Right click
+  cornerstoneTools.setToolActiveForElement(element, 'Pan', { mouseButtonMask: 4 }); // Middle click
   cornerstoneTools.setToolActiveForElement(element, 'StackScrollMouseWheel', {}); // Mouse wheel
   
   console.log('Viewport tools enabled for element:', element);
