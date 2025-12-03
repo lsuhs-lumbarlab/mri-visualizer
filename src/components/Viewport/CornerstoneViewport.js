@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { Box, Slider, Typography, Paper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import * as cornerstone from 'cornerstone-core';
 import * as cornerstoneTools from 'cornerstone-tools';
 import { enableViewportTools } from '../../services/cornerstoneInit';
+import { ReferenceLines } from '../../services/referenceLines';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -65,19 +66,190 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const CornerstoneViewport = ({ 
+const CornerstoneViewport = forwardRef(({ 
   imageIds = [], 
   orientation = 'UNKNOWN',
-  seriesDescription = ''
-}) => {
+  seriesDescription = '',
+  referenceLinesEnabled = false,
+  viewportData = {},
+  onImageIndexChange
+}, ref) => {
   const classes = useStyles();
   const viewportRef = useRef(null);
   const [currentSlice, setCurrentSlice] = useState(0);
-  const [viewportData, setViewportData] = useState({
+  const [viewportInfo, setViewportInfo] = useState({
     zoom: 1,
     windowWidth: 0,
     windowCenter: 0,
   });
+  
+  // Reference lines for this viewport
+  const referenceLinesRefs = useRef({
+    sagittal: new ReferenceLines(),
+    axial: new ReferenceLines(),
+    coronal: new ReferenceLines(),
+  });
+
+  // Store current image for reference lines
+  const currentImageRef = useRef(null);
+
+  // Cache for first and last slice images
+  const boundaryImagesCache = useRef({
+    sagittal: { first: null, last: null },
+    axial: { first: null, last: null },
+    coronal: { first: null, last: null },
+  });
+
+  // Draw reference lines from a specific source
+  const drawReferenceLinesFrom = (sourceOrientation) => {
+    const element = viewportRef.current;
+    if (!element || !currentImageRef.current || !referenceLinesEnabled) return;
+
+    const canvas = element.querySelector('canvas');
+    if (!canvas) return;
+
+    const sourceData = viewportData[sourceOrientation];
+    if (!sourceData || sourceData.imageIds.length === 0) return;
+
+    const currentIndex = sourceData.currentImageIndex || 0;
+    const sourceImageId = sourceData.imageIds[currentIndex];
+    if (!sourceImageId) return;
+
+    const isFirstSlice = currentIndex === 0;
+    const isLastSlice = currentIndex === sourceData.imageIds.length - 1;
+
+    // Load current slice image
+    cornerstone.loadImage(sourceImageId).then((sourceImage) => {
+      const refLines = referenceLinesRefs.current[sourceOrientation];
+      
+      // Build and draw current slice reference line (RED)
+      const success = refLines.build(sourceImage, currentImageRef.current);
+      
+      if (success) {
+        refLines.draw(canvas);
+
+        // Only draw boundary lines if current slice is NOT at first or last
+        const firstImageId = sourceData.imageIds[0];
+        const lastImageId = sourceData.imageIds[sourceData.imageIds.length - 1];
+
+        // Load first slice if not cached
+        if (firstImageId && !boundaryImagesCache.current[sourceOrientation].first) {
+          cornerstone.loadImage(firstImageId).then((firstImage) => {
+            boundaryImagesCache.current[sourceOrientation].first = firstImage;
+            // Only draw first boundary if not currently on first slice
+            if (!isFirstSlice) {
+              refLines.drawBoundaries(
+                canvas,
+                firstImage,
+                null
+              );
+            }
+          }).catch(() => {});
+        } else if (boundaryImagesCache.current[sourceOrientation].first && !isFirstSlice) {
+          // Draw cached first boundary
+          refLines.drawBoundaries(
+            canvas,
+            boundaryImagesCache.current[sourceOrientation].first,
+            null
+          );
+        }
+
+        // Load last slice if not cached
+        if (lastImageId && !boundaryImagesCache.current[sourceOrientation].last) {
+          cornerstone.loadImage(lastImageId).then((lastImage) => {
+            boundaryImagesCache.current[sourceOrientation].last = lastImage;
+            // Only draw last boundary if not currently on last slice
+            if (!isLastSlice) {
+              refLines.drawBoundaries(
+                canvas,
+                null,
+                lastImage
+              );
+            }
+          }).catch(() => {});
+        } else if (boundaryImagesCache.current[sourceOrientation].last && !isLastSlice) {
+          // Draw cached last boundary
+          refLines.drawBoundaries(
+            canvas,
+            null,
+            boundaryImagesCache.current[sourceOrientation].last
+          );
+        }
+      }
+    }).catch(() => {
+      // Silently fail - not all images may have proper metadata
+    });
+  };
+
+  // Draw all reference lines
+  const drawAllReferenceLines = () => {
+    if (!referenceLinesEnabled) return;
+
+    const orientations = ['sagittal', 'axial', 'coronal'];
+    const currentOrientation = orientation.toLowerCase();
+
+    orientations.forEach(otherOrientation => {
+      if (otherOrientation !== currentOrientation) {
+        drawReferenceLinesFrom(otherOrientation);
+      }
+    });
+  };
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    updateReferenceLinesFromOther: (sourceOrientation) => {
+      drawReferenceLinesFrom(sourceOrientation);
+    }
+  }));
+
+  const updateViewportData = (element) => {
+    try {
+      const viewport = cornerstone.getViewport(element);
+      const image = cornerstone.getImage(element);
+      
+      if (viewport && image) {
+        setViewportInfo({
+          zoom: viewport.scale.toFixed(2),
+          windowWidth: Math.round(viewport.voi.windowWidth),
+          windowCenter: Math.round(viewport.voi.windowCenter),
+        });
+      }
+    } catch (error) {
+      // Ignore errors during viewport updates
+    }
+  };
+
+  const onImageRendered = (e) => {
+    updateViewportData(e.target);
+    
+    // Draw reference lines if enabled
+    if (referenceLinesEnabled) {
+      drawAllReferenceLines();
+    }
+  };
+
+  const onStackScroll = () => {
+    const element = viewportRef.current;
+    if (!element) return;
+
+    const stackData = cornerstoneTools.getToolState(element, 'stack');
+    if (stackData && stackData.data && stackData.data[0]) {
+      const newIndex = stackData.data[0].currentImageIdIndex;
+      setCurrentSlice(newIndex);
+      
+      // Load new image and update reference
+      cornerstone.loadImage(imageIds[newIndex]).then((image) => {
+        currentImageRef.current = image;
+        
+        // Notify parent of image index change
+        if (onImageIndexChange) {
+          onImageIndexChange(newIndex);
+        }
+      }).catch(error => {
+        console.error('Error loading image:', error);
+      });
+    }
+  };
 
   useEffect(() => {
     const element = viewportRef.current;
@@ -88,6 +260,7 @@ const CornerstoneViewport = ({
 
     // Load the first image
     cornerstone.loadImage(imageIds[0]).then((image) => {
+      currentImageRef.current = image;
       cornerstone.displayImage(element, image);
 
       // Set up the stack
@@ -105,24 +278,19 @@ const CornerstoneViewport = ({
       updateViewportData(element);
 
       // Listen to image rendered event
-      element.addEventListener('cornerstoneimagerendered', () => {
-        updateViewportData(element);
-      });
+      element.addEventListener('cornerstoneimagerendered', onImageRendered);
 
       // Listen to stack scroll event
-      element.addEventListener('cornerstonetoolsstackscroll', (e) => {
-        const stackData = cornerstoneTools.getToolState(element, 'stack');
-        if (stackData && stackData.data && stackData.data[0]) {
-          setCurrentSlice(stackData.data[0].currentImageIdIndex);
-        }
-      });
+      element.addEventListener('cornerstonetoolsstackscroll', onStackScroll);
+    }).catch(error => {
+      console.error('Error initializing viewport:', error);
     });
 
     return () => {
       // Cleanup: Remove event listeners and disable element
       if (element) {
-        element.removeEventListener('cornerstoneimagerendered', updateViewportData);
-        element.removeEventListener('cornerstonetoolsstackscroll', () => {});
+        element.removeEventListener('cornerstoneimagerendered', onImageRendered);
+        element.removeEventListener('cornerstonetoolsstackscroll', onStackScroll);
         
         // Clear cornerstone element
         try {
@@ -134,18 +302,19 @@ const CornerstoneViewport = ({
     };
   }, [imageIds]);
 
-  const updateViewportData = (element) => {
-    const viewport = cornerstone.getViewport(element);
-    const image = cornerstone.getImage(element);
-    
-    if (viewport && image) {
-      setViewportData({
-        zoom: viewport.scale.toFixed(2),
-        windowWidth: Math.round(viewport.voi.windowWidth),
-        windowCenter: Math.round(viewport.voi.windowCenter),
-      });
+  // Clear boundary cache when viewport data changes or feature is toggled
+  useEffect(() => {
+    // Clear cache when reference lines are toggled or viewport changes
+    boundaryImagesCache.current = {
+      sagittal: { first: null, last: null },
+      axial: { first: null, last: null },
+      coronal: { first: null, last: null },
+    };
+
+    if (referenceLinesEnabled && imageIds.length > 0 && currentImageRef.current) {
+      drawAllReferenceLines();
     }
-  };
+  }, [referenceLinesEnabled, viewportData]);
 
   const handleSliceChange = (event, newValue) => {
     const element = viewportRef.current;
@@ -155,8 +324,16 @@ const CornerstoneViewport = ({
     if (stackData && stackData.data && stackData.data[0]) {
       stackData.data[0].currentImageIdIndex = newValue;
       cornerstone.loadImage(imageIds[newValue]).then((image) => {
+        currentImageRef.current = image;
         cornerstone.displayImage(element, image);
         setCurrentSlice(newValue);
+        
+        // Notify parent of image index change
+        if (onImageIndexChange) {
+          onImageIndexChange(newValue);
+        }
+      }).catch(error => {
+        console.error('Error changing slice:', error);
       });
     }
   };
@@ -197,8 +374,8 @@ const CornerstoneViewport = ({
         
         <Box className={`${classes.overlay} ${classes.bottomRight}`}>
           <div>Slice: {currentSlice + 1} / {imageIds.length}</div>
-          <div>Zoom: {viewportData.zoom}</div>
-          <div>W/L: {viewportData.windowWidth} / {viewportData.windowCenter}</div>
+          <div>Zoom: {viewportInfo.zoom}</div>
+          <div>W/L: {viewportInfo.windowWidth} / {viewportInfo.windowCenter}</div>
         </Box>
       </Box>
 
@@ -220,6 +397,6 @@ const CornerstoneViewport = ({
       </Box>
     </Paper>
   );
-};
+});
 
 export default CornerstoneViewport;

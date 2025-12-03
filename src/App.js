@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { CssBaseline, Box, CircularProgress } from '@material-ui/core';
 import theme from './theme/theme';
@@ -15,11 +15,19 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFiles, setHasFiles] = useState(false);
-  const [viewportKey, setViewportKey] = useState(0); // Add key for remounting viewports
+  const [viewportKey, setViewportKey] = useState(0);
+  const [referenceLinesEnabled, setReferenceLinesEnabled] = useState(false);
   const [viewportData, setViewportData] = useState({
-    sagittal: { imageIds: [], seriesDescription: '' },
-    axial: { imageIds: [], seriesDescription: '' },
-    coronal: { imageIds: [], seriesDescription: '' },
+    sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+    axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+    coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+  });
+
+  // Store references to viewport components
+  const viewportRefs = useRef({
+    sagittal: null,
+    axial: null,
+    coronal: null,
   });
 
   useEffect(() => {
@@ -50,10 +58,13 @@ function App() {
     
     // Reset viewport data
     setViewportData({
-      sagittal: { imageIds: [], seriesDescription: '' },
-      axial: { imageIds: [], seriesDescription: '' },
-      coronal: { imageIds: [], seriesDescription: '' },
+      sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+      axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+      coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
     });
+    
+    // Reset reference lines
+    setReferenceLinesEnabled(false);
     
     // Increment key to force remount of viewports
     setViewportKey(prev => prev + 1);
@@ -103,12 +114,44 @@ function App() {
         [orientation]: {
           imageIds: imageIds,
           seriesDescription: series.seriesDescription,
+          currentImageIndex: 0,
         },
       }));
     } catch (error) {
       console.error('Error loading series:', error);
       alert('Error loading series. Check console for details.');
     }
+  };
+
+  // Handle viewport image index changes for reference lines
+  const handleViewportImageChange = (orientation, imageIndex) => {
+    setViewportData((prev) => ({
+      ...prev,
+      [orientation]: {
+        ...prev[orientation],
+        currentImageIndex: imageIndex,
+      },
+    }));
+
+    // Trigger reference lines update on other viewports
+    if (referenceLinesEnabled) {
+      updateReferenceLines(orientation);
+    }
+  };
+
+  // Update reference lines on all other viewports
+  const updateReferenceLines = (sourceOrientation) => {
+    const orientations = ['sagittal', 'axial', 'coronal'];
+    orientations.forEach(orientation => {
+      if (orientation !== sourceOrientation && viewportRefs.current[orientation]) {
+        viewportRefs.current[orientation].updateReferenceLinesFromOther(sourceOrientation);
+      }
+    });
+  };
+
+  // Toggle reference lines
+  const toggleReferenceLines = () => {
+    setReferenceLinesEnabled(prev => !prev);
   };
 
   if (!isInitialized) {
@@ -131,7 +174,13 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <MainLayout
-        header={<Header onOpenFiles={handleFilesSelected} />}
+        header={
+          <Header 
+            onOpenFiles={handleFilesSelected}
+            referenceLinesEnabled={referenceLinesEnabled}
+            onToggleReferenceLines={toggleReferenceLines}
+          />
+        }
         sidebar={
           hasFiles ? (
             <StudyExplorer key={viewportKey} onSeriesSelect={handleSeriesSelect} />
@@ -142,21 +191,36 @@ function App() {
         viewports={[
           <CornerstoneViewport
             key={`sagittal-${viewportKey}`}
+            ref={el => viewportRefs.current.sagittal = el}
             imageIds={viewportData.sagittal.imageIds}
             orientation="SAGITTAL"
             seriesDescription={viewportData.sagittal.seriesDescription}
+            currentImageIndex={viewportData.sagittal.currentImageIndex}
+            referenceLinesEnabled={referenceLinesEnabled}
+            viewportData={viewportData}
+            onImageIndexChange={(index) => handleViewportImageChange('sagittal', index)}
           />,
           <CornerstoneViewport
             key={`axial-${viewportKey}`}
+            ref={el => viewportRefs.current.axial = el}
             imageIds={viewportData.axial.imageIds}
             orientation="AXIAL"
             seriesDescription={viewportData.axial.seriesDescription}
+            currentImageIndex={viewportData.axial.currentImageIndex}
+            referenceLinesEnabled={referenceLinesEnabled}
+            viewportData={viewportData}
+            onImageIndexChange={(index) => handleViewportImageChange('axial', index)}
           />,
           <CornerstoneViewport
             key={`coronal-${viewportKey}`}
+            ref={el => viewportRefs.current.coronal = el}
             imageIds={viewportData.coronal.imageIds}
             orientation="CORONAL"
             seriesDescription={viewportData.coronal.seriesDescription}
+            currentImageIndex={viewportData.coronal.currentImageIndex}
+            referenceLinesEnabled={referenceLinesEnabled}
+            viewportData={viewportData}
+            onImageIndexChange={(index) => handleViewportImageChange('coronal', index)}
           />
         ]}
       />
