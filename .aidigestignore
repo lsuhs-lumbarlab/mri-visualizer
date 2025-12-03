@@ -64,6 +64,3 @@ lerna-debug.log*
 
 # Test files
 *.test.js.snap
-
-# ai-digest codebase.md file
-codebase.md
