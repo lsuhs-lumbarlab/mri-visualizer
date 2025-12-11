@@ -1,3 +1,4 @@
+import * as cornerstone from 'cornerstone-core';
 import DicomGeometry from '../utils/DicomGeometry';
 import Point from '../utils/LinearAlgebra/Point';
 import Line from '../utils/LinearAlgebra/Line';
@@ -99,23 +100,45 @@ export class ReferenceLines {
     return point;
   }
 
-  draw(canvas) {
-    if (!this.isReferenceLine) return;
+  static clearCanvas(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  draw(canvas, element) {
+    if (!canvas) return;
+
+    const enabledElement = cornerstone.getEnabledElement(element);
+    if (!enabledElement) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
     try {
-      this.line = this.buildLine();
+      const line = this.buildLine();
 
-      if (!this.line) return;
+      if (!line) return;
 
-      const ctx = canvas.getContext('2d');
-      const line = this.line;
+      this.line = line;
+
+       // Map from image pixel coordinates to canvas coordinates
+      const startCanvas = cornerstone.pixelToCanvas(element, {
+        x: line.startPoint.x,
+        y: line.startPoint.y,
+      });
+      const endCanvas = cornerstone.pixelToCanvas(element, {
+        x: line.endPoint.x,
+        y: line.endPoint.y,
+      });
 
       // Draw the main reference line (RED - solid)
       ctx.beginPath();
       ctx.setLineDash([]); // Solid line
       ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)'; // Red color
-      ctx.moveTo(line.startPoint.x, line.startPoint.y);
-      ctx.lineTo(line.endPoint.x, line.endPoint.y);
+      ctx.moveTo(startCanvas.x, startCanvas.y);
+      ctx.lineTo(endCanvas.x, endCanvas.y);
       ctx.lineWidth = 1;
       ctx.stroke();
     } catch (error) {

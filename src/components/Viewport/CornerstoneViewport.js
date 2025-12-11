@@ -76,6 +76,7 @@ const CornerstoneViewport = forwardRef(({
 }, ref) => {
   const classes = useStyles();
   const viewportRef = useRef(null);
+  const overlayCanvasRef = useRef(null);
   const [currentSlice, setCurrentSlice] = useState(0);
   const [viewportInfo, setViewportInfo] = useState({
     zoom: 1,
@@ -93,12 +94,19 @@ const CornerstoneViewport = forwardRef(({
   // Store current image for reference lines
   const currentImageRef = useRef(null);
 
+  // Redraw the current image to clear any previously drawn reference lines
+  const clearReferenceLines = () => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+
+    ReferenceLines.clearCanvas(canvas);
+  };
+
   // Draw reference lines from a specific source
   const drawReferenceLinesFrom = (sourceOrientation) => {
     const element = viewportRef.current;
     if (!element || !currentImageRef.current || !referenceLinesEnabled) return;
-
-    const canvas = element.querySelector('canvas');
+    const canvas = overlayCanvasRef.current;
     if (!canvas) return;
 
     const sourceData = viewportData[sourceOrientation];
@@ -116,7 +124,7 @@ const CornerstoneViewport = forwardRef(({
       
       if (success) {
         // Draw the reference lines
-        refLines.draw(canvas);
+        refLines.draw(canvas, element);
       }
     }).catch(error => {
       // Silently fail - not all images may have proper metadata
@@ -126,6 +134,9 @@ const CornerstoneViewport = forwardRef(({
   // Draw all reference lines
   const drawAllReferenceLines = () => {
     if (!referenceLinesEnabled) return;
+
+     // Clear any existing reference lines before drawing new ones
+    clearReferenceLines();
 
     const orientations = ['sagittal', 'axial', 'coronal'];
     const currentOrientation = orientation.toLowerCase();
@@ -140,6 +151,9 @@ const CornerstoneViewport = forwardRef(({
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     updateReferenceLinesFromOther: (sourceOrientation) => {
+      // When another viewport changes slice, clear old lines
+      // and draw only the new reference line from that source.
+      clearReferenceLines();
       drawReferenceLinesFrom(sourceOrientation);
     }
   }));
@@ -162,7 +176,16 @@ const CornerstoneViewport = forwardRef(({
   };
 
   const onImageRendered = (e) => {
-    updateViewportData(e.target);
+    const element = e.target;
+    updateViewportData(element);
+
+    // Ensure overlay canvas matches the underlying image canvas size
+    const baseCanvas = element.querySelector('canvas');
+    const overlayCanvas = overlayCanvasRef.current;
+    if (baseCanvas && overlayCanvas) {
+      overlayCanvas.width = baseCanvas.width;
+      overlayCanvas.height = baseCanvas.height;
+    }
     
     // Draw reference lines if enabled
     if (referenceLinesEnabled) {
@@ -300,6 +323,9 @@ const CornerstoneViewport = forwardRef(({
       
       <Box className={classes.viewportWrapper}>
         <div ref={viewportRef} className={classes.viewport} />
+
+        {/* Reference lines overlay canvas */}
+        <canvas ref={overlayCanvasRef} className={classes.viewport} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
         
         {/* Overlays */}
         <Box className={`${classes.overlay} ${classes.topLeft}`}>
