@@ -93,13 +93,6 @@ const CornerstoneViewport = forwardRef(({
   // Store current image for reference lines
   const currentImageRef = useRef(null);
 
-  // Cache for first and last slice images
-  const boundaryImagesCache = useRef({
-    sagittal: { first: null, last: null },
-    axial: { first: null, last: null },
-    coronal: { first: null, last: null },
-  });
-
   // Draw reference lines from a specific source
   const drawReferenceLinesFrom = (sourceOrientation) => {
     const element = viewportRef.current;
@@ -111,72 +104,21 @@ const CornerstoneViewport = forwardRef(({
     const sourceData = viewportData[sourceOrientation];
     if (!sourceData || sourceData.imageIds.length === 0) return;
 
-    const currentIndex = sourceData.currentImageIndex || 0;
-    const sourceImageId = sourceData.imageIds[currentIndex];
+    // Load the current image from the source viewport
+    const sourceImageId = sourceData.imageIds[sourceData.currentImageIndex || 0];
     if (!sourceImageId) return;
 
-    const isFirstSlice = currentIndex === 0;
-    const isLastSlice = currentIndex === sourceData.imageIds.length - 1;
-
-    // Load current slice image
     cornerstone.loadImage(sourceImageId).then((sourceImage) => {
       const refLines = referenceLinesRefs.current[sourceOrientation];
       
-      // Build and draw current slice reference line (RED)
+      // Build reference lines from source to this destination
       const success = refLines.build(sourceImage, currentImageRef.current);
       
       if (success) {
+        // Draw the reference lines
         refLines.draw(canvas);
-
-        // Only draw boundary lines if current slice is NOT at first or last
-        const firstImageId = sourceData.imageIds[0];
-        const lastImageId = sourceData.imageIds[sourceData.imageIds.length - 1];
-
-        // Load first slice if not cached
-        if (firstImageId && !boundaryImagesCache.current[sourceOrientation].first) {
-          cornerstone.loadImage(firstImageId).then((firstImage) => {
-            boundaryImagesCache.current[sourceOrientation].first = firstImage;
-            // Only draw first boundary if not currently on first slice
-            if (!isFirstSlice) {
-              refLines.drawBoundaries(
-                canvas,
-                firstImage,
-                null
-              );
-            }
-          }).catch(() => {});
-        } else if (boundaryImagesCache.current[sourceOrientation].first && !isFirstSlice) {
-          // Draw cached first boundary
-          refLines.drawBoundaries(
-            canvas,
-            boundaryImagesCache.current[sourceOrientation].first,
-            null
-          );
-        }
-
-        // Load last slice if not cached
-        if (lastImageId && !boundaryImagesCache.current[sourceOrientation].last) {
-          cornerstone.loadImage(lastImageId).then((lastImage) => {
-            boundaryImagesCache.current[sourceOrientation].last = lastImage;
-            // Only draw last boundary if not currently on last slice
-            if (!isLastSlice) {
-              refLines.drawBoundaries(
-                canvas,
-                null,
-                lastImage
-              );
-            }
-          }).catch(() => {});
-        } else if (boundaryImagesCache.current[sourceOrientation].last && !isLastSlice) {
-          // Draw cached last boundary
-          refLines.drawBoundaries(
-            canvas,
-            null,
-            boundaryImagesCache.current[sourceOrientation].last
-          );
-        }
       }
-    }).catch(() => {
+    }).catch(error => {
       // Silently fail - not all images may have proper metadata
     });
   };
@@ -302,15 +244,8 @@ const CornerstoneViewport = forwardRef(({
     };
   }, [imageIds]);
 
-  // Clear boundary cache when viewport data changes or feature is toggled
+  // Redraw reference lines when enabled/disabled or viewport data changes
   useEffect(() => {
-    // Clear cache when reference lines are toggled or viewport changes
-    boundaryImagesCache.current = {
-      sagittal: { first: null, last: null },
-      axial: { first: null, last: null },
-      coronal: { first: null, last: null },
-    };
-
     if (referenceLinesEnabled && imageIds.length > 0 && currentImageRef.current) {
       drawAllReferenceLines();
     }
