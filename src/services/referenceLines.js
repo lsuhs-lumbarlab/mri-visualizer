@@ -139,7 +139,7 @@ export class ReferenceLines {
       ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)'; // Red color
       ctx.moveTo(startCanvas.x, startCanvas.y);
       ctx.lineTo(endCanvas.x, endCanvas.y);
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
     } catch (error) {
       console.error('Error drawing reference lines:', error);

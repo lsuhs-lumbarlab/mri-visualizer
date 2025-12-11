@@ -131,11 +131,11 @@ const CornerstoneViewport = forwardRef(({
     });
   };
 
-  // Draw all reference lines
+  // Draw all reference lines for this viewport based on current viewportData
   const drawAllReferenceLines = () => {
     if (!referenceLinesEnabled) return;
 
-     // Clear any existing reference lines before drawing new ones
+    // Clear any existing reference lines before drawing new ones
     clearReferenceLines();
 
     const orientations = ['sagittal', 'axial', 'coronal'];
@@ -150,11 +150,10 @@ const CornerstoneViewport = forwardRef(({
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
-    updateReferenceLinesFromOther: (sourceOrientation) => {
-      // When another viewport changes slice, clear old lines
-      // and draw only the new reference line from that source.
-      clearReferenceLines();
-      drawReferenceLinesFrom(sourceOrientation);
+    updateReferenceLinesFromOther: () => {
+      // Parent notifies that some viewport's slice changed; recompute all
+      // incoming reference lines for this viewport from current viewportData.
+      drawAllReferenceLines();
     }
   }));
 
@@ -185,11 +184,6 @@ const CornerstoneViewport = forwardRef(({
     if (baseCanvas && overlayCanvas) {
       overlayCanvas.width = baseCanvas.width;
       overlayCanvas.height = baseCanvas.height;
-    }
-    
-    // Draw reference lines if enabled
-    if (referenceLinesEnabled) {
-      drawAllReferenceLines();
     }
   };
 
@@ -271,6 +265,8 @@ const CornerstoneViewport = forwardRef(({
   useEffect(() => {
     if (referenceLinesEnabled && imageIds.length > 0 && currentImageRef.current) {
       drawAllReferenceLines();
+    } else {
+      clearReferenceLines();
     }
   }, [referenceLinesEnabled, viewportData]);
 
