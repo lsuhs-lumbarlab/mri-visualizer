@@ -17,6 +17,7 @@ function App() {
   const [hasFiles, setHasFiles] = useState(false);
   const [viewportKey, setViewportKey] = useState(0);
   const [referenceLinesEnabled, setReferenceLinesEnabled] = useState(false);
+  const [activeViewport, setActiveViewport] = useState(null);
   const [viewportData, setViewportData] = useState({
     sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
     axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
@@ -65,6 +66,9 @@ function App() {
     
     // Reset reference lines
     setReferenceLinesEnabled(false);
+    
+    // Reset active viewport
+    setActiveViewport(null);
     
     // Increment key to force remount of viewports
     setViewportKey(prev => prev + 1);
@@ -133,8 +137,8 @@ function App() {
       },
     }));
 
-    // Trigger reference lines update on other viewports
-    if (referenceLinesEnabled) {
+    // UPDATED: Only trigger reference lines update if this is the active viewport
+    if (referenceLinesEnabled && activeViewport === orientation) {
       updateReferenceLines(orientation);
     }
   };
@@ -152,6 +156,16 @@ function App() {
   // Toggle reference lines
   const toggleReferenceLines = () => {
     setReferenceLinesEnabled(prev => !prev);
+  };
+
+  // Handle viewport click to set active viewport
+  const handleViewportClick = (orientation) => {
+    setActiveViewport(orientation);
+    
+    // UPDATED: Update reference lines immediately when viewport becomes active
+    if (referenceLinesEnabled) {
+      updateReferenceLines(orientation);
+    }
   };
 
   if (!isInitialized) {
@@ -199,6 +213,9 @@ function App() {
             referenceLinesEnabled={referenceLinesEnabled}
             viewportData={viewportData}
             onImageIndexChange={(index) => handleViewportImageChange('sagittal', index)}
+            isActive={activeViewport === 'sagittal'}
+            onViewportClick={() => handleViewportClick('sagittal')}
+            activeViewport={activeViewport} // NEW: Pass active viewport
           />,
           <CornerstoneViewport
             key={`axial-${viewportKey}`}
@@ -210,6 +227,9 @@ function App() {
             referenceLinesEnabled={referenceLinesEnabled}
             viewportData={viewportData}
             onImageIndexChange={(index) => handleViewportImageChange('axial', index)}
+            isActive={activeViewport === 'axial'}
+            onViewportClick={() => handleViewportClick('axial')}
+            activeViewport={activeViewport} // NEW: Pass active viewport
           />,
           <CornerstoneViewport
             key={`coronal-${viewportKey}`}
@@ -221,6 +241,9 @@ function App() {
             referenceLinesEnabled={referenceLinesEnabled}
             viewportData={viewportData}
             onImageIndexChange={(index) => handleViewportImageChange('coronal', index)}
+            isActive={activeViewport === 'coronal'}
+            onViewportClick={() => handleViewportClick('coronal')}
+            activeViewport={activeViewport} // NEW: Pass active viewport
           />
         ]}
       />

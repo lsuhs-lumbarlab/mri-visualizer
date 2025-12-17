@@ -12,6 +12,11 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
     height: '100%',
     minWidth: '33%',
+    border: '1px solid transparent',
+    transition: 'border-color 0.2s ease',
+  },
+  containerActive: {
+    borderColor: '#ff0000 !important',
   },
   viewportWrapper: {
     position: 'relative',
@@ -20,6 +25,9 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  viewportWrapperClickable: {
+    cursor: 'pointer',
   },
   viewport: {
     width: '100%',
@@ -72,7 +80,10 @@ const CornerstoneViewport = forwardRef(({
   seriesDescription = '',
   referenceLinesEnabled = false,
   viewportData = {},
-  onImageIndexChange
+  onImageIndexChange,
+  isActive = false,
+  onViewportClick,
+  activeViewport = null, // NEW: Track which viewport is active globally
 }, ref) => {
   const classes = useStyles();
   const viewportRef = useRef(null);
@@ -131,21 +142,29 @@ const CornerstoneViewport = forwardRef(({
     });
   };
 
-  // Draw all reference lines for this viewport based on current viewportData
+  // UPDATED: Draw reference lines only from the active viewport
   const drawAllReferenceLines = () => {
     if (!referenceLinesEnabled) return;
 
     // Clear any existing reference lines before drawing new ones
     clearReferenceLines();
 
-    const orientations = ['sagittal', 'axial', 'coronal'];
+    // NEW: Only draw reference lines if there's an active viewport
+    // and this viewport is NOT the active one
     const currentOrientation = orientation.toLowerCase();
-
-    orientations.forEach(otherOrientation => {
-      if (otherOrientation !== currentOrientation) {
-        drawReferenceLinesFrom(otherOrientation);
-      }
-    });
+    
+    if (!activeViewport) {
+      // No active viewport selected, don't draw any reference lines
+      return;
+    }
+    
+    if (activeViewport === currentOrientation) {
+      // This IS the active viewport, don't draw reference lines on itself
+      return;
+    }
+    
+    // Draw reference lines only from the active viewport
+    drawReferenceLinesFrom(activeViewport);
   };
 
   // Expose methods to parent component
@@ -261,14 +280,14 @@ const CornerstoneViewport = forwardRef(({
     };
   }, [imageIds]);
 
-  // Redraw reference lines when enabled/disabled or viewport data changes
+  // UPDATED: Redraw reference lines when enabled/disabled, viewport data changes, OR activeViewport changes
   useEffect(() => {
     if (referenceLinesEnabled && imageIds.length > 0 && currentImageRef.current) {
       drawAllReferenceLines();
     } else {
       clearReferenceLines();
     }
-  }, [referenceLinesEnabled, viewportData]);
+  }, [referenceLinesEnabled, viewportData, activeViewport]); // UPDATED: Added activeViewport dependency
 
   const handleSliceChange = (event, newValue) => {
     const element = viewportRef.current;
@@ -292,7 +311,17 @@ const CornerstoneViewport = forwardRef(({
     }
   };
 
-  if (imageIds.length === 0) {
+  // Only trigger click if viewport has images loaded
+  const handleViewportWrapperClick = () => {
+    if (imageIds.length > 0 && onViewportClick) {
+      onViewportClick();
+    }
+  };
+
+  // Determine if this viewport is clickable (has images)
+  const hasImages = imageIds.length > 0;
+
+  if (!hasImages) {
     return (
       <Paper className={classes.container}>
         <Box className={classes.title}>
@@ -310,14 +339,17 @@ const CornerstoneViewport = forwardRef(({
   }
 
   return (
-    <Paper className={classes.container}>
+    <Paper className={`${classes.container} ${isActive ? classes.containerActive : ''}`}>
       <Box className={classes.title}>
         <Typography variant="subtitle2">
           {orientation} - {seriesDescription}
         </Typography>
       </Box>
       
-      <Box className={classes.viewportWrapper}>
+      <Box 
+        className={`${classes.viewportWrapper} ${hasImages ? classes.viewportWrapperClickable : ''}`}
+        onClick={handleViewportWrapperClick}
+      >
         <div ref={viewportRef} className={classes.viewport} />
 
         {/* Reference lines overlay canvas */}
