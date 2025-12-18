@@ -377,7 +377,7 @@ const CornerstoneViewport = forwardRef(({
           min={0}
           max={imageIds.length - 1}
           onChange={handleSliceChange}
-          valueLabelDisplay="auto"
+          valueLabelDisplay="off"
           valueLabelFormat={(value) => `${value + 1}/${imageIds.length}`}
         />
         <Typography variant="caption">

@@ -69,6 +69,98 @@ http://localhost:3000
 
 If it does not open automatically, open the URL manually.
 
+## Deploying to GitHub Pages
+
+This project is a React app (using `react-app-rewired`), so you deploy a **built** version of the site to GitHub Pages.
+
+### 1) Install the `gh-pages` dependency
+
+From the project root:
+
+```bash
+npm install gh-pages --save-dev --legacy-peer-deps
+```
+
+(You may need `--legacy-peer-deps` for the same reason as above.)
+
+### 2) Add a `homepage` field in `package.json`
+
+Add this at the top level of your `package.json` (not inside `scripts`):
+
+```json
+"homepage": "https://<YOUR_GITHUB_USERNAME>.github.io/<YOUR_REPO_NAME>",
+```
+
+Example:
+
+```json
+"homepage": "https://lsuhs-lumbarlab.github.io/mri-visualizer",
+```
+
+### 3) Add deploy scripts in `package.json`
+
+In `package.json`, add these scripts under `"scripts"` (keep the existing scripts as-is):
+
+```json
+"predeploy": "npm run build",
+"deploy": "gh-pages -d build"
+```
+
+Because this repo uses `react-app-rewired`, your scripts section will typically look similar to:
+
+```json
+"scripts": {
+  "start": "react-app-rewired start",
+  "build": "react-app-rewired build",
+  "test": "react-app-rewired test",
+  "eject": "react-scripts eject",
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d build"
+}
+```
+
+### 4) Deploy
+
+Run:
+
+```bash
+npm run deploy
+```
+
+This will:
+* Build the app into the `build/` folder
+* Publish the contents of `build/` to a `gh-pages` branch
+
+### 5) Enable GitHub Pages in your repo settings
+
+On GitHub:
+1. Open the repository page
+2. Go to **Settings** → **Pages**
+3. Under **Build and deployment**:
+   * Source: **Deploy from branch**
+   * Branch: **gh-pages**
+   * Folder: **/** (root)
+4. Save
+
+Your site will be available at:
+
+```
+https://<YOUR_GITHUB_USERNAME>.github.io/<YOUR_REPO_NAME>/
+```
+
+### Updating the live site
+
+GitHub Pages will not rebuild automatically just because you pushed code to `main`. To update the live site after changes:
+
+```bash
+git add .
+git commit -m "Your message"
+git push
+npm run deploy
+```
+
+(If you want fully automatic deploys on every push, you can set up a GitHub Actions workflow.)
+
 ## Common Issues
 
 ### Dependency Resolution Errors
