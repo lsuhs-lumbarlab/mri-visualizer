@@ -37,7 +37,7 @@ const useStyles = makeStyles((theme) => ({
     position: 'absolute',
     color: '#fff',
     pointerEvents: 'none',
-    fontSize: '12px',
+    fontSize: '13px',
     textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
   },
   topLeft: {
@@ -58,6 +58,31 @@ const useStyles = makeStyles((theme) => ({
     right: 5,
     textAlign: 'right',
   },
+  // NEW: Directional marker styles
+  topCenter: {
+    top: 5,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    fontSize: '15px',
+  },
+  bottomCenter: {
+    bottom: 5,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    fontSize: '15px',
+  },
+  leftCenter: {
+    top: '50%',
+    left: 5,
+    transform: 'translateY(-50%)',
+    fontSize: '15px',
+  },
+  rightCenter: {
+    top: '50%',
+    right: 5,
+    transform: 'translateY(-50%)',
+    fontSize: '15px',
+  },
   sliderContainer: {
     padding: theme.spacing(2),
     display: 'flex',
@@ -74,6 +99,42 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+// NEW: Define directional markers for each orientation
+const getDirectionalMarkers = (orientation) => {
+  const orientationUpper = orientation.toUpperCase();
+  
+  switch (orientationUpper) {
+    case 'SAGITTAL':
+      return {
+        top: 'S',      // Superior
+        bottom: 'I',   // Inferior
+        left: 'A',     // Anterior
+        right: 'P',    // Posterior
+      };
+    case 'AXIAL':
+      return {
+        top: 'A',      // Anterior
+        bottom: 'P',   // Posterior
+        left: 'R',     // Right
+        right: 'L',    // Left
+      };
+    case 'CORONAL':
+      return {
+        top: 'S',      // Superior
+        bottom: 'I',   // Inferior
+        left: 'R',     // Right
+        right: 'L',    // Left
+      };
+    default:
+      return {
+        top: '',
+        bottom: '',
+        left: '',
+        right: '',
+      };
+  }
+};
+
 const CornerstoneViewport = forwardRef(({ 
   imageIds = [], 
   orientation = 'UNKNOWN',
@@ -83,7 +144,7 @@ const CornerstoneViewport = forwardRef(({
   onImageIndexChange,
   isActive = false,
   onViewportClick,
-  activeViewport = null, // NEW: Track which viewport is active globally
+  activeViewport = null,
 }, ref) => {
   const classes = useStyles();
   const viewportRef = useRef(null);
@@ -104,6 +165,9 @@ const CornerstoneViewport = forwardRef(({
 
   // Store current image for reference lines
   const currentImageRef = useRef(null);
+
+  // NEW: Get directional markers for this orientation
+  const directionalMarkers = getDirectionalMarkers(orientation);
 
   // Redraw the current image to clear any previously drawn reference lines
   const clearReferenceLines = () => {
@@ -142,14 +206,14 @@ const CornerstoneViewport = forwardRef(({
     });
   };
 
-  // UPDATED: Draw reference lines only from the active viewport
+  // Draw reference lines only from the active viewport
   const drawAllReferenceLines = () => {
     if (!referenceLinesEnabled) return;
 
     // Clear any existing reference lines before drawing new ones
     clearReferenceLines();
 
-    // NEW: Only draw reference lines if there's an active viewport
+    // Only draw reference lines if there's an active viewport
     // and this viewport is NOT the active one
     const currentOrientation = orientation.toLowerCase();
     
@@ -280,14 +344,14 @@ const CornerstoneViewport = forwardRef(({
     };
   }, [imageIds]);
 
-  // UPDATED: Redraw reference lines when enabled/disabled, viewport data changes, OR activeViewport changes
+  // Redraw reference lines when enabled/disabled, viewport data changes, OR activeViewport changes
   useEffect(() => {
     if (referenceLinesEnabled && imageIds.length > 0 && currentImageRef.current) {
       drawAllReferenceLines();
     } else {
       clearReferenceLines();
     }
-  }, [referenceLinesEnabled, viewportData, activeViewport]); // UPDATED: Added activeViewport dependency
+  }, [referenceLinesEnabled, viewportData, activeViewport]);
 
   const handleSliceChange = (event, newValue) => {
     const element = viewportRef.current;
@@ -364,7 +428,21 @@ const CornerstoneViewport = forwardRef(({
         <Box className={`${classes.overlay} ${classes.bottomRight}`}>
           <div>Slice: {currentSlice + 1} / {imageIds.length}</div>
           <div>Zoom: {viewportInfo.zoom}</div>
-          <div>W/L: {viewportInfo.windowWidth} / {viewportInfo.windowCenter}</div>
+          <div>WL: {viewportInfo.windowCenter}&nbsp; WW: {viewportInfo.windowWidth}</div>
+        </Box>
+
+        {/* NEW: Directional markers */}
+        <Box className={`${classes.overlay} ${classes.topCenter}`}>
+          {directionalMarkers.top}
+        </Box>
+        <Box className={`${classes.overlay} ${classes.bottomCenter}`}>
+          {directionalMarkers.bottom}
+        </Box>
+        <Box className={`${classes.overlay} ${classes.leftCenter}`}>
+          {directionalMarkers.left}
+        </Box>
+        <Box className={`${classes.overlay} ${classes.rightCenter}`}>
+          {directionalMarkers.right}
         </Box>
       </Box>
 
