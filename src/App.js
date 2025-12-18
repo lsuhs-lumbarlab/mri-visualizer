@@ -9,6 +9,7 @@ import CornerstoneViewport from './components/Viewport/CornerstoneViewport';
 import FileUploader from './components/FileUpload/FileUploader';
 import { initCornerstone } from './services/cornerstoneInit';
 import { loadDicomFile, loadSeriesImageStack, isDicomFile } from './services/dicomLoader';
+import { formatDicomDate, formatDicomTime } from './utils/dateFormatter'; // NEW
 import db from './database/db';
 
 function App() {
@@ -18,6 +19,12 @@ function App() {
   const [viewportKey, setViewportKey] = useState(0);
   const [referenceLinesEnabled, setReferenceLinesEnabled] = useState(false);
   const [activeViewport, setActiveViewport] = useState(null);
+  const [patientInfo, setPatientInfo] = useState({
+    patientName: '',
+    dateOfBirth: '',
+    studyDate: '',
+    studyTime: '', // NEW
+  });
   const [viewportData, setViewportData] = useState({
     sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
     axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
@@ -64,6 +71,14 @@ function App() {
       coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
     });
     
+    // Reset patient info
+    setPatientInfo({
+      patientName: '',
+      dateOfBirth: '',
+      studyDate: '',
+      studyTime: '', // NEW
+    });
+    
     // Reset reference lines
     setReferenceLinesEnabled(false);
     
@@ -96,6 +111,19 @@ function App() {
       
       if (loadedCount > 0) {
         setHasFiles(true);
+        
+        // Load patient info from the first study
+        const studies = await db.studies.toArray();
+        if (studies.length > 0) {
+          const study = studies[0];
+          setPatientInfo({
+            patientName: study.patientName || 'Unknown',
+            dateOfBirth: formatDicomDate(study.patientBirthDate), // UPDATED: Format date
+            studyDate: formatDicomDate(study.studyDate), // UPDATED: Format date
+            studyTime: formatDicomTime(study.studyTime), // NEW: Format time
+          });
+        }
+        
         console.log(`Loaded ${loadedCount} DICOM file(s)`);
       } else {
         alert('No valid DICOM files found in the selected files.');
@@ -137,7 +165,7 @@ function App() {
       },
     }));
 
-    // UPDATED: Only trigger reference lines update if this is the active viewport
+    // Only trigger reference lines update if this is the active viewport
     if (referenceLinesEnabled && activeViewport === orientation) {
       updateReferenceLines(orientation);
     }
@@ -162,7 +190,7 @@ function App() {
   const handleViewportClick = (orientation) => {
     setActiveViewport(orientation);
     
-    // UPDATED: Update reference lines immediately when viewport becomes active
+    // Update reference lines immediately when viewport becomes active
     if (referenceLinesEnabled) {
       updateReferenceLines(orientation);
     }
@@ -215,7 +243,11 @@ function App() {
             onImageIndexChange={(index) => handleViewportImageChange('sagittal', index)}
             isActive={activeViewport === 'sagittal'}
             onViewportClick={() => handleViewportClick('sagittal')}
-            activeViewport={activeViewport} // NEW: Pass active viewport
+            activeViewport={activeViewport}
+            patientName={patientInfo.patientName}
+            dateOfBirth={patientInfo.dateOfBirth}
+            studyDate={patientInfo.studyDate}
+            studyTime={patientInfo.studyTime} // NEW
           />,
           <CornerstoneViewport
             key={`axial-${viewportKey}`}
@@ -229,7 +261,11 @@ function App() {
             onImageIndexChange={(index) => handleViewportImageChange('axial', index)}
             isActive={activeViewport === 'axial'}
             onViewportClick={() => handleViewportClick('axial')}
-            activeViewport={activeViewport} // NEW: Pass active viewport
+            activeViewport={activeViewport}
+            patientName={patientInfo.patientName}
+            dateOfBirth={patientInfo.dateOfBirth}
+            studyDate={patientInfo.studyDate}
+            studyTime={patientInfo.studyTime} // NEW
           />,
           <CornerstoneViewport
             key={`coronal-${viewportKey}`}
@@ -243,7 +279,11 @@ function App() {
             onImageIndexChange={(index) => handleViewportImageChange('coronal', index)}
             isActive={activeViewport === 'coronal'}
             onViewportClick={() => handleViewportClick('coronal')}
-            activeViewport={activeViewport} // NEW: Pass active viewport
+            activeViewport={activeViewport}
+            patientName={patientInfo.patientName}
+            dateOfBirth={patientInfo.dateOfBirth}
+            studyDate={patientInfo.studyDate}
+            studyTime={patientInfo.studyTime} // NEW
           />
         ]}
       />

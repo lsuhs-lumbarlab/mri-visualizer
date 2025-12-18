@@ -170,7 +170,9 @@ const storeFileData = async (file, metadata, imageId, arrayBuffer) => {
     patientName: metadata.patientName,
     patientID: metadata.patientID,
     studyDate: metadata.studyDate,
+    studyTime: metadata.studyTime,
     studyDescription: metadata.studyDescription,
+    patientBirthDate: metadata.patientBirthDate,
   });
 
   // Store series with orientation
