@@ -58,7 +58,6 @@ const useStyles = makeStyles((theme) => ({
     right: 5,
     textAlign: 'right',
   },
-  // NEW: Directional marker styles
   topCenter: {
     top: 5,
     left: '50%',
@@ -99,31 +98,30 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-// NEW: Define directional markers for each orientation
 const getDirectionalMarkers = (orientation) => {
   const orientationUpper = orientation.toUpperCase();
   
   switch (orientationUpper) {
     case 'SAGITTAL':
       return {
-        top: 'S',      // Superior
-        bottom: 'I',   // Inferior
-        left: 'A',     // Anterior
-        right: 'P',    // Posterior
+        top: 'S',
+        bottom: 'I',
+        left: 'A',
+        right: 'P',
       };
     case 'AXIAL':
       return {
-        top: 'A',      // Anterior
-        bottom: 'P',   // Posterior
-        left: 'R',     // Right
-        right: 'L',    // Left
+        top: 'A',
+        bottom: 'P',
+        left: 'R',
+        right: 'L',
       };
     case 'CORONAL':
       return {
-        top: 'S',      // Superior
-        bottom: 'I',   // Inferior
-        left: 'R',     // Right
-        right: 'L',    // Left
+        top: 'S',
+        bottom: 'I',
+        left: 'R',
+        right: 'L',
       };
     default:
       return {
@@ -169,8 +167,10 @@ const CornerstoneViewport = forwardRef(({
 
   // Store current image for reference lines
   const currentImageRef = useRef(null);
+  
+  // NEW: Track the current drawing request to prevent race conditions
+  const drawingRequestRef = useRef(0);
 
-  // NEW: Get directional markers for this orientation
   const directionalMarkers = getDirectionalMarkers(orientation);
 
   // Redraw the current image to clear any previously drawn reference lines
@@ -178,11 +178,14 @@ const CornerstoneViewport = forwardRef(({
     const canvas = overlayCanvasRef.current;
     if (!canvas) return;
 
-    ReferenceLines.clearCanvas(canvas);
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    }
   };
 
   // Draw reference lines from a specific source
-  const drawReferenceLinesFrom = (sourceOrientation) => {
+  const drawReferenceLinesFrom = (sourceOrientation, requestId) => {
     const element = viewportRef.current;
     if (!element || !currentImageRef.current || !referenceLinesEnabled) return;
     const canvas = overlayCanvasRef.current;
@@ -196,14 +199,23 @@ const CornerstoneViewport = forwardRef(({
     if (!sourceImageId) return;
 
     cornerstone.loadImage(sourceImageId).then((sourceImage) => {
+      // NEW: Check if this drawing request is still valid
+      if (requestId !== drawingRequestRef.current) {
+        // A newer drawing request has been made, ignore this one
+        return;
+      }
+
       const refLines = referenceLinesRefs.current[sourceOrientation];
       
       // Build reference lines from source to this destination
       const success = refLines.build(sourceImage, currentImageRef.current);
       
       if (success) {
-        // Draw the reference lines
-        refLines.draw(canvas, element);
+        // Check again before drawing (in case request changed during build)
+        if (requestId === drawingRequestRef.current) {
+          // Draw the reference lines
+          refLines.draw(canvas, element);
+        }
       }
     }).catch(error => {
       // Silently fail - not all images may have proper metadata
@@ -212,6 +224,10 @@ const CornerstoneViewport = forwardRef(({
 
   // Draw reference lines only from the active viewport
   const drawAllReferenceLines = () => {
+    // NEW: Increment request ID to invalidate any pending async operations
+    drawingRequestRef.current += 1;
+    const currentRequestId = drawingRequestRef.current;
+
     if (!referenceLinesEnabled) return;
 
     // Clear any existing reference lines before drawing new ones
@@ -232,14 +248,12 @@ const CornerstoneViewport = forwardRef(({
     }
     
     // Draw reference lines only from the active viewport
-    drawReferenceLinesFrom(activeViewport);
+    drawReferenceLinesFrom(activeViewport, currentRequestId); // NEW: Pass request ID
   };
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     updateReferenceLinesFromOther: () => {
-      // Parent notifies that some viewport's slice changed; recompute all
-      // incoming reference lines for this viewport from current viewportData.
       drawAllReferenceLines();
     }
   }));
@@ -379,14 +393,12 @@ const CornerstoneViewport = forwardRef(({
     }
   };
 
-  // Only trigger click if viewport has images loaded
   const handleViewportWrapperClick = () => {
     if (imageIds.length > 0 && onViewportClick) {
       onViewportClick();
     }
   };
 
-  // Determine if this viewport is clickable (has images)
   const hasImages = imageIds.length > 0;
 
   if (!hasImages) {
@@ -436,7 +448,7 @@ const CornerstoneViewport = forwardRef(({
           <div>WL: {viewportInfo.windowCenter}&nbsp; WW: {viewportInfo.windowWidth}</div>
         </Box>
 
-        {/* NEW: Directional markers */}
+        {/* Directional markers */}
         <Box className={`${classes.overlay} ${classes.topCenter}`}>
           {directionalMarkers.top}
         </Box>
