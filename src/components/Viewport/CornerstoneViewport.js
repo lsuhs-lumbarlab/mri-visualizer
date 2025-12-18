@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { Box, Slider, Typography, Paper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import * as cornerstone from 'cornerstone-core';
 import * as cornerstoneTools from 'cornerstone-tools';
 import { enableViewportTools } from '../../services/cornerstoneInit';
+import { ReferenceLines } from '../../services/referenceLines';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -11,6 +12,11 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
     height: '100%',
     minWidth: '33%',
+    border: '1px solid transparent',
+    transition: 'border-color 0.2s ease',
+  },
+  containerActive: {
+    borderColor: '#ff0000 !important',
   },
   viewportWrapper: {
     position: 'relative',
@@ -19,6 +25,9 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  viewportWrapperClickable: {
+    cursor: 'pointer',
   },
   viewport: {
     width: '100%',
@@ -65,19 +74,160 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const CornerstoneViewport = ({ 
+const CornerstoneViewport = forwardRef(({ 
   imageIds = [], 
   orientation = 'UNKNOWN',
-  seriesDescription = ''
-}) => {
+  seriesDescription = '',
+  referenceLinesEnabled = false,
+  viewportData = {},
+  onImageIndexChange,
+  isActive = false,
+  onViewportClick,
+  activeViewport = null, // NEW: Track which viewport is active globally
+}, ref) => {
   const classes = useStyles();
   const viewportRef = useRef(null);
+  const overlayCanvasRef = useRef(null);
   const [currentSlice, setCurrentSlice] = useState(0);
-  const [viewportData, setViewportData] = useState({
+  const [viewportInfo, setViewportInfo] = useState({
     zoom: 1,
     windowWidth: 0,
     windowCenter: 0,
   });
+  
+  // Reference lines for this viewport
+  const referenceLinesRefs = useRef({
+    sagittal: new ReferenceLines(),
+    axial: new ReferenceLines(),
+    coronal: new ReferenceLines(),
+  });
+
+  // Store current image for reference lines
+  const currentImageRef = useRef(null);
+
+  // Redraw the current image to clear any previously drawn reference lines
+  const clearReferenceLines = () => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+
+    ReferenceLines.clearCanvas(canvas);
+  };
+
+  // Draw reference lines from a specific source
+  const drawReferenceLinesFrom = (sourceOrientation) => {
+    const element = viewportRef.current;
+    if (!element || !currentImageRef.current || !referenceLinesEnabled) return;
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+
+    const sourceData = viewportData[sourceOrientation];
+    if (!sourceData || sourceData.imageIds.length === 0) return;
+
+    // Load the current image from the source viewport
+    const sourceImageId = sourceData.imageIds[sourceData.currentImageIndex || 0];
+    if (!sourceImageId) return;
+
+    cornerstone.loadImage(sourceImageId).then((sourceImage) => {
+      const refLines = referenceLinesRefs.current[sourceOrientation];
+      
+      // Build reference lines from source to this destination
+      const success = refLines.build(sourceImage, currentImageRef.current);
+      
+      if (success) {
+        // Draw the reference lines
+        refLines.draw(canvas, element);
+      }
+    }).catch(error => {
+      // Silently fail - not all images may have proper metadata
+    });
+  };
+
+  // UPDATED: Draw reference lines only from the active viewport
+  const drawAllReferenceLines = () => {
+    if (!referenceLinesEnabled) return;
+
+    // Clear any existing reference lines before drawing new ones
+    clearReferenceLines();
+
+    // NEW: Only draw reference lines if there's an active viewport
+    // and this viewport is NOT the active one
+    const currentOrientation = orientation.toLowerCase();
+    
+    if (!activeViewport) {
+      // No active viewport selected, don't draw any reference lines
+      return;
+    }
+    
+    if (activeViewport === currentOrientation) {
+      // This IS the active viewport, don't draw reference lines on itself
+      return;
+    }
+    
+    // Draw reference lines only from the active viewport
+    drawReferenceLinesFrom(activeViewport);
+  };
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    updateReferenceLinesFromOther: () => {
+      // Parent notifies that some viewport's slice changed; recompute all
+      // incoming reference lines for this viewport from current viewportData.
+      drawAllReferenceLines();
+    }
+  }));
+
+  const updateViewportData = (element) => {
+    try {
+      const viewport = cornerstone.getViewport(element);
+      const image = cornerstone.getImage(element);
+      
+      if (viewport && image) {
+        setViewportInfo({
+          zoom: viewport.scale.toFixed(2),
+          windowWidth: Math.round(viewport.voi.windowWidth),
+          windowCenter: Math.round(viewport.voi.windowCenter),
+        });
+      }
+    } catch (error) {
+      // Ignore errors during viewport updates
+    }
+  };
+
+  const onImageRendered = (e) => {
+    const element = e.target;
+    updateViewportData(element);
+
+    // Ensure overlay canvas matches the underlying image canvas size
+    const baseCanvas = element.querySelector('canvas');
+    const overlayCanvas = overlayCanvasRef.current;
+    if (baseCanvas && overlayCanvas) {
+      overlayCanvas.width = baseCanvas.width;
+      overlayCanvas.height = baseCanvas.height;
+    }
+  };
+
+  const onStackScroll = () => {
+    const element = viewportRef.current;
+    if (!element) return;
+
+    const stackData = cornerstoneTools.getToolState(element, 'stack');
+    if (stackData && stackData.data && stackData.data[0]) {
+      const newIndex = stackData.data[0].currentImageIdIndex;
+      setCurrentSlice(newIndex);
+      
+      // Load new image and update reference
+      cornerstone.loadImage(imageIds[newIndex]).then((image) => {
+        currentImageRef.current = image;
+        
+        // Notify parent of image index change
+        if (onImageIndexChange) {
+          onImageIndexChange(newIndex);
+        }
+      }).catch(error => {
+        console.error('Error loading image:', error);
+      });
+    }
+  };
 
   useEffect(() => {
     const element = viewportRef.current;
@@ -88,6 +238,7 @@ const CornerstoneViewport = ({
 
     // Load the first image
     cornerstone.loadImage(imageIds[0]).then((image) => {
+      currentImageRef.current = image;
       cornerstone.displayImage(element, image);
 
       // Set up the stack
@@ -105,24 +256,19 @@ const CornerstoneViewport = ({
       updateViewportData(element);
 
       // Listen to image rendered event
-      element.addEventListener('cornerstoneimagerendered', () => {
-        updateViewportData(element);
-      });
+      element.addEventListener('cornerstoneimagerendered', onImageRendered);
 
       // Listen to stack scroll event
-      element.addEventListener('cornerstonetoolsstackscroll', (e) => {
-        const stackData = cornerstoneTools.getToolState(element, 'stack');
-        if (stackData && stackData.data && stackData.data[0]) {
-          setCurrentSlice(stackData.data[0].currentImageIdIndex);
-        }
-      });
+      element.addEventListener('cornerstonetoolsstackscroll', onStackScroll);
+    }).catch(error => {
+      console.error('Error initializing viewport:', error);
     });
 
     return () => {
       // Cleanup: Remove event listeners and disable element
       if (element) {
-        element.removeEventListener('cornerstoneimagerendered', updateViewportData);
-        element.removeEventListener('cornerstonetoolsstackscroll', () => {});
+        element.removeEventListener('cornerstoneimagerendered', onImageRendered);
+        element.removeEventListener('cornerstonetoolsstackscroll', onStackScroll);
         
         // Clear cornerstone element
         try {
@@ -134,18 +280,14 @@ const CornerstoneViewport = ({
     };
   }, [imageIds]);
 
-  const updateViewportData = (element) => {
-    const viewport = cornerstone.getViewport(element);
-    const image = cornerstone.getImage(element);
-    
-    if (viewport && image) {
-      setViewportData({
-        zoom: viewport.scale.toFixed(2),
-        windowWidth: Math.round(viewport.voi.windowWidth),
-        windowCenter: Math.round(viewport.voi.windowCenter),
-      });
+  // UPDATED: Redraw reference lines when enabled/disabled, viewport data changes, OR activeViewport changes
+  useEffect(() => {
+    if (referenceLinesEnabled && imageIds.length > 0 && currentImageRef.current) {
+      drawAllReferenceLines();
+    } else {
+      clearReferenceLines();
     }
-  };
+  }, [referenceLinesEnabled, viewportData, activeViewport]); // UPDATED: Added activeViewport dependency
 
   const handleSliceChange = (event, newValue) => {
     const element = viewportRef.current;
@@ -155,13 +297,31 @@ const CornerstoneViewport = ({
     if (stackData && stackData.data && stackData.data[0]) {
       stackData.data[0].currentImageIdIndex = newValue;
       cornerstone.loadImage(imageIds[newValue]).then((image) => {
+        currentImageRef.current = image;
         cornerstone.displayImage(element, image);
         setCurrentSlice(newValue);
+        
+        // Notify parent of image index change
+        if (onImageIndexChange) {
+          onImageIndexChange(newValue);
+        }
+      }).catch(error => {
+        console.error('Error changing slice:', error);
       });
     }
   };
 
-  if (imageIds.length === 0) {
+  // Only trigger click if viewport has images loaded
+  const handleViewportWrapperClick = () => {
+    if (imageIds.length > 0 && onViewportClick) {
+      onViewportClick();
+    }
+  };
+
+  // Determine if this viewport is clickable (has images)
+  const hasImages = imageIds.length > 0;
+
+  if (!hasImages) {
     return (
       <Paper className={classes.container}>
         <Box className={classes.title}>
@@ -179,15 +339,21 @@ const CornerstoneViewport = ({
   }
 
   return (
-    <Paper className={classes.container}>
+    <Paper className={`${classes.container} ${isActive ? classes.containerActive : ''}`}>
       <Box className={classes.title}>
         <Typography variant="subtitle2">
           {orientation} - {seriesDescription}
         </Typography>
       </Box>
       
-      <Box className={classes.viewportWrapper}>
+      <Box 
+        className={`${classes.viewportWrapper} ${hasImages ? classes.viewportWrapperClickable : ''}`}
+        onClick={handleViewportWrapperClick}
+      >
         <div ref={viewportRef} className={classes.viewport} />
+
+        {/* Reference lines overlay canvas */}
+        <canvas ref={overlayCanvasRef} className={classes.viewport} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
         
         {/* Overlays */}
         <Box className={`${classes.overlay} ${classes.topLeft}`}>
@@ -197,8 +363,8 @@ const CornerstoneViewport = ({
         
         <Box className={`${classes.overlay} ${classes.bottomRight}`}>
           <div>Slice: {currentSlice + 1} / {imageIds.length}</div>
-          <div>Zoom: {viewportData.zoom}</div>
-          <div>W/L: {viewportData.windowWidth} / {viewportData.windowCenter}</div>
+          <div>Zoom: {viewportInfo.zoom}</div>
+          <div>W/L: {viewportInfo.windowWidth} / {viewportInfo.windowCenter}</div>
         </Box>
       </Box>
 
@@ -220,6 +386,6 @@ const CornerstoneViewport = ({
       </Box>
     </Paper>
   );
-};
+});
 
 export default CornerstoneViewport;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { CssBaseline, Box, CircularProgress } from '@material-ui/core';
 import theme from './theme/theme';
@@ -15,11 +15,20 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFiles, setHasFiles] = useState(false);
-  const [viewportKey, setViewportKey] = useState(0); // Add key for remounting viewports
+  const [viewportKey, setViewportKey] = useState(0);
+  const [referenceLinesEnabled, setReferenceLinesEnabled] = useState(false);
+  const [activeViewport, setActiveViewport] = useState(null);
   const [viewportData, setViewportData] = useState({
-    sagittal: { imageIds: [], seriesDescription: '' },
-    axial: { imageIds: [], seriesDescription: '' },
-    coronal: { imageIds: [], seriesDescription: '' },
+    sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+    axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+    coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+  });
+
+  // Store references to viewport components
+  const viewportRefs = useRef({
+    sagittal: null,
+    axial: null,
+    coronal: null,
   });
 
   useEffect(() => {
@@ -50,10 +59,16 @@ function App() {
     
     // Reset viewport data
     setViewportData({
-      sagittal: { imageIds: [], seriesDescription: '' },
-      axial: { imageIds: [], seriesDescription: '' },
-      coronal: { imageIds: [], seriesDescription: '' },
+      sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+      axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+      coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
     });
+    
+    // Reset reference lines
+    setReferenceLinesEnabled(false);
+    
+    // Reset active viewport
+    setActiveViewport(null);
     
     // Increment key to force remount of viewports
     setViewportKey(prev => prev + 1);
@@ -103,11 +118,53 @@ function App() {
         [orientation]: {
           imageIds: imageIds,
           seriesDescription: series.seriesDescription,
+          currentImageIndex: 0,
         },
       }));
     } catch (error) {
       console.error('Error loading series:', error);
       alert('Error loading series. Check console for details.');
+    }
+  };
+
+  // Handle viewport image index changes for reference lines
+  const handleViewportImageChange = (orientation, imageIndex) => {
+    setViewportData((prev) => ({
+      ...prev,
+      [orientation]: {
+        ...prev[orientation],
+        currentImageIndex: imageIndex,
+      },
+    }));
+
+    // UPDATED: Only trigger reference lines update if this is the active viewport
+    if (referenceLinesEnabled && activeViewport === orientation) {
+      updateReferenceLines(orientation);
+    }
+  };
+
+  // Update reference lines on all other viewports
+  const updateReferenceLines = (sourceOrientation) => {
+    const orientations = ['sagittal', 'axial', 'coronal'];
+    orientations.forEach(orientation => {
+      if (orientation !== sourceOrientation && viewportRefs.current[orientation]) {
+        viewportRefs.current[orientation].updateReferenceLinesFromOther(sourceOrientation);
+      }
+    });
+  };
+
+  // Toggle reference lines
+  const toggleReferenceLines = () => {
+    setReferenceLinesEnabled(prev => !prev);
+  };
+
+  // Handle viewport click to set active viewport
+  const handleViewportClick = (orientation) => {
+    setActiveViewport(orientation);
+    
+    // UPDATED: Update reference lines immediately when viewport becomes active
+    if (referenceLinesEnabled) {
+      updateReferenceLines(orientation);
     }
   };
 
@@ -131,7 +188,13 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <MainLayout
-        header={<Header onOpenFiles={handleFilesSelected} />}
+        header={
+          <Header 
+            onOpenFiles={handleFilesSelected}
+            referenceLinesEnabled={referenceLinesEnabled}
+            onToggleReferenceLines={toggleReferenceLines}
+          />
+        }
         sidebar={
           hasFiles ? (
             <StudyExplorer key={viewportKey} onSeriesSelect={handleSeriesSelect} />
@@ -142,21 +205,45 @@ function App() {
         viewports={[
           <CornerstoneViewport
             key={`sagittal-${viewportKey}`}
+            ref={el => viewportRefs.current.sagittal = el}
             imageIds={viewportData.sagittal.imageIds}
             orientation="SAGITTAL"
             seriesDescription={viewportData.sagittal.seriesDescription}
+            currentImageIndex={viewportData.sagittal.currentImageIndex}
+            referenceLinesEnabled={referenceLinesEnabled}
+            viewportData={viewportData}
+            onImageIndexChange={(index) => handleViewportImageChange('sagittal', index)}
+            isActive={activeViewport === 'sagittal'}
+            onViewportClick={() => handleViewportClick('sagittal')}
+            activeViewport={activeViewport} // NEW: Pass active viewport
           />,
           <CornerstoneViewport
             key={`axial-${viewportKey}`}
+            ref={el => viewportRefs.current.axial = el}
             imageIds={viewportData.axial.imageIds}
             orientation="AXIAL"
             seriesDescription={viewportData.axial.seriesDescription}
+            currentImageIndex={viewportData.axial.currentImageIndex}
+            referenceLinesEnabled={referenceLinesEnabled}
+            viewportData={viewportData}
+            onImageIndexChange={(index) => handleViewportImageChange('axial', index)}
+            isActive={activeViewport === 'axial'}
+            onViewportClick={() => handleViewportClick('axial')}
+            activeViewport={activeViewport} // NEW: Pass active viewport
           />,
           <CornerstoneViewport
             key={`coronal-${viewportKey}`}
+            ref={el => viewportRefs.current.coronal = el}
             imageIds={viewportData.coronal.imageIds}
             orientation="CORONAL"
             seriesDescription={viewportData.coronal.seriesDescription}
+            currentImageIndex={viewportData.coronal.currentImageIndex}
+            referenceLinesEnabled={referenceLinesEnabled}
+            viewportData={viewportData}
+            onImageIndexChange={(index) => handleViewportImageChange('coronal', index)}
+            isActive={activeViewport === 'coronal'}
+            onViewportClick={() => handleViewportClick('coronal')}
+            activeViewport={activeViewport} // NEW: Pass active viewport
           />
         ]}
       />
