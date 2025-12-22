@@ -6,7 +6,7 @@ import MainLayout from './components/Layout/MainLayout';
 import Header from './components/Layout/Header';
 import StudyExplorer from './components/StudyExplorer/StudyExplorer';
 import CornerstoneViewport from './components/Viewport/CornerstoneViewport';
-import FileUploader from './components/FileUpload/FileUploader';
+// import FileUploader from './components/FileUpload/FileUploader';
 import { initCornerstone } from './services/cornerstoneInit';
 import { loadDicomFile, loadSeriesImageStack, isDicomFile } from './services/dicomLoader';
 import { formatDicomDate, formatDicomTime } from './utils/dateFormatter'; // NEW
@@ -39,12 +39,24 @@ function App() {
   });
 
   useEffect(() => {
-    // Initialize Cornerstone
-    initCornerstone();
-    setIsInitialized(true);
+    let cancelled = false;
 
-    // Clear database on app start (don't persist across refreshes)
-    clearDatabase();
+    (async () => {
+      // Initialize Cornerstone
+      initCornerstone();
+
+      // Clear database on app start (don't persist across refreshes)
+      await clearDatabase();
+
+      // Only render the app after DB is cleared to avoid stale sidebar state
+      if (!cancelled) {
+        setIsInitialized(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const clearDatabase = async () => {
@@ -224,11 +236,10 @@ function App() {
           />
         }
         sidebar={
-          hasFiles ? (
-            <StudyExplorer key={viewportKey} onSeriesSelect={handleSeriesSelect} />
-          ) : (
-            <FileUploader onFilesSelected={handleFilesSelected} />
-          )
+          <StudyExplorer
+            key={hasFiles ? viewportKey : 'empty'}
+            onSeriesSelect={handleSeriesSelect}
+          />
         }
         viewports={[
           <CornerstoneViewport
