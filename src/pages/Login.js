@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Container,
   Paper,
   TextField,
   Button,
@@ -22,17 +21,21 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1a1a1a', // Dark background
+    padding: theme.spacing(2),
   },
   paper: {
     padding: theme.spacing(4),
     width: '100%',
     maxWidth: 400,
+    backgroundColor: '#2d2d2d', // Darker paper background
+    margin: '0 auto', // Ensure centering
   },
   title: {
     marginBottom: theme.spacing(3),
     textAlign: 'center',
     fontWeight: 600,
+    color: '#ffffff', // White text for dark mode
   },
   form: {
     width: '100%',
@@ -149,13 +152,12 @@ const Login = () => {
 
   return (
     <div className={classes.container}>
-      <Container maxWidth="sm">
-        <Paper className={classes.paper} elevation={3}>
+      <Paper className={classes.paper} elevation={3}>
           <Typography variant="h4" className={classes.title}>
             MRI Visualizer
           </Typography>
           
-          <Typography variant="h6" style={{ marginBottom: 24, textAlign: 'center' }}>
+          <Typography variant="h6" style={{ marginBottom: 24, textAlign: 'center', color: '#ffffff' }}>
             Sign In
           </Typography>
 
@@ -229,7 +231,7 @@ const Login = () => {
           </form>
 
           <Box className={classes.signupLink}>
-            <Typography variant="body2" component="span">
+            <Typography variant="body2" component="span" style={{ color: '#ffffff' }}>
               Don't have an account?{' '}
             </Typography>
             <Button
@@ -242,7 +244,6 @@ const Login = () => {
             </Button>
           </Box>
         </Paper>
-      </Container>
     </div>
   );
 };
