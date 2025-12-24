@@ -2,7 +2,8 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Tooltip } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import FolderOpenIcon from '@material-ui/icons/FolderOpen';
-import GridOnIcon from '@material-ui/icons/GridOn'; // Changed from ViewInArIcon
+import GridOnIcon from '@material-ui/icons/GridOn';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 
 const useStyles = makeStyles((theme) => ({
   appBar: {
@@ -20,7 +21,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Header = ({ onOpenFiles, referenceLinesEnabled, onToggleReferenceLines }) => {
+const Header = ({ onOpenFiles, referenceLinesEnabled, onToggleReferenceLines, onLogout }) => {
   const classes = useStyles();
 
   const handleOpenFolder = () => {
@@ -65,6 +66,18 @@ const Header = ({ onOpenFiles, referenceLinesEnabled, onToggleReferenceLines }) 
             <GridOnIcon />
           </IconButton>
         </Tooltip>
+
+        {onLogout && (
+          <Tooltip title="Logout">
+            <IconButton 
+              color="inherit" 
+              onClick={onLogout}
+              className={classes.button}
+            >
+              <ExitToAppIcon />
+            </IconButton>
+          </Tooltip>
+        )}
       </Toolbar>
     </AppBar>
   );
