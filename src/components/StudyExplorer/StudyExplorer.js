@@ -8,8 +8,19 @@ const useStyles = makeStyles((theme) => ({
   root: {
     width: '100%',
   },
+  title: {
+    fontSize: '1.5rem',  // Adjust title size here
+    fontWeight: 600,
+    marginBottom: theme.spacing(1),
+  },
+  studyItem: {
+    paddingTop: theme.spacing(1),    // Adjust study item spacing here
+    paddingBottom: theme.spacing(1),
+  },
   nested: {
-    paddingLeft: theme.spacing(4),
+    paddingLeft: theme.spacing(2),
+    paddingTop: theme.spacing(0.5),    // Adjust nested spacing here
+    paddingBottom: theme.spacing(0.5),
   },
   seriesItem: {
     cursor: 'pointer',
@@ -19,6 +30,20 @@ const useStyles = makeStyles((theme) => ({
   },
   selected: {
     backgroundColor: theme.palette.action.selected,
+  },
+  // Custom text sizing for list items
+  studyPrimary: {
+    fontSize: '0.875rem',  // Adjust study name font size
+    fontWeight: 500,
+  },
+  studySecondary: {
+    fontSize: '0.875rem',   // Adjust study details font size
+  },
+  seriesPrimary: {
+    fontSize: '0.8rem',    // Adjust series name font size
+  },
+  seriesSecondary: {
+    fontSize: '0.8rem',    // Adjust series details font size
   },
 }));
 
@@ -76,24 +101,30 @@ const StudyExplorer = ({ onSeriesSelect }) => {
 
   return (
     <Box className={classes.root}>
-      <Box p={2}>
-        <Typography variant="h6">Study Explorer</Typography>
-      </Box>
-      <List>
+      <Typography className={classes.title}>
+        Study Explorer
+      </Typography>
+      <List dense>
         {studies.map((study) => (
           <React.Fragment key={study.studyInstanceUID}>
-            <ListItem button onClick={() => handleStudyClick(study.studyInstanceUID)}>
+            <ListItem 
+              button 
+              onClick={() => handleStudyClick(study.studyInstanceUID)}
+              className={classes.studyItem}
+            >
               <ListItemText
                 primary={study.patientName || 'Unknown Patient'}
                 secondary={`${study.studyDate || 'No date'} - ${
                   study.studyDescription || 'No description'
                 }`}
+                primaryTypographyProps={{ className: classes.studyPrimary }}
+                secondaryTypographyProps={{ className: classes.studySecondary }}
               />
               {openStudies[study.studyInstanceUID] ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
             
             <Collapse in={openStudies[study.studyInstanceUID]} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding>
+              <List component="div" disablePadding dense>
                 {study.series.map((series) => (
                   <ListItem
                     key={series.seriesInstanceUID}
@@ -108,6 +139,8 @@ const StudyExplorer = ({ onSeriesSelect }) => {
                     <ListItemText
                       primary={`${series.orientation} - ${series.seriesDescription || 'No description'}`}
                       secondary={`Series ${series.seriesNumber || 'N/A'}`}
+                      primaryTypographyProps={{ className: classes.seriesPrimary }}
+                      secondaryTypographyProps={{ className: classes.seriesSecondary }}
                     />
                   </ListItem>
                 ))}

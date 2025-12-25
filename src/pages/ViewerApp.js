@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   CircularProgress, 
-  AppBar, 
-  Toolbar, 
   IconButton, 
   Tooltip 
 } from '@material-ui/core';
@@ -29,16 +27,42 @@ const useStyles = makeStyles((theme) => ({
     height: '100vh',
     backgroundColor: theme.palette.background.default,
   },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing(1, 3),
+    backgroundColor: theme.palette.background.paper,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  iconButton: {
+    color: theme.palette.text.primary,
+  },
+  activeButton: {
+    color: theme.palette.primary.main,
+    backgroundColor: theme.palette.action.selected,
+  },
   content: {
     display: 'flex',
     flex: 1,
     overflow: 'hidden',
   },
   sidebar: {
-    width: 200,
+    width: 230,
     borderRight: `1px solid ${theme.palette.divider}`,
     overflow: 'auto',
     backgroundColor: theme.palette.background.paper,
+    padding: theme.spacing(2),
   },
   viewportArea: {
     flex: 1,
@@ -46,20 +70,6 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'row',
     padding: theme.spacing(1),
     gap: theme.spacing(1),
-  },
-  // Header styles
-  appBar: {
-    zIndex: theme.zIndex.drawer + 1,
-  },
-  spacer: {
-    flexGrow: 1,
-  },
-  button: {
-    marginLeft: theme.spacing(2),
-  },
-  activeButton: {
-    color: theme.palette.primary.light,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 }));
 
@@ -309,24 +319,23 @@ function ViewerApp() {
   return (
     <Box className={classes.root}>
       {/* Header */}
-      <AppBar position="static" className={classes.appBar}>
-        <Toolbar>
+      <Box className={classes.header}>
+        <Box className={classes.headerLeft}>
           <Tooltip title="Back to Library">
             <IconButton 
-              color="inherit" 
+              className={classes.iconButton}
               onClick={handleBackToLibrary}
             >
               <ArrowBackIcon />
             </IconButton>
           </Tooltip>
-          
-          <div className={classes.spacer} />
-          
+        </Box>
+        
+        <Box className={classes.headerRight}>
           <Tooltip title="Open DICOM Folder">
             <IconButton 
-              color="inherit" 
+              className={classes.iconButton}
               onClick={handleOpenFolder}
-              className={classes.button}
             >
               <FolderOpenIcon />
             </IconButton>
@@ -334,9 +343,8 @@ function ViewerApp() {
 
           <Tooltip title={referenceLinesEnabled ? "Hide Reference Lines" : "Show Reference Lines"}>
             <IconButton 
-              color="inherit" 
+              className={`${classes.iconButton} ${referenceLinesEnabled ? classes.activeButton : ''}`}
               onClick={toggleReferenceLines}
-              className={`${classes.button} ${referenceLinesEnabled ? classes.activeButton : ''}`}
             >
               <GridOnIcon />
             </IconButton>
@@ -344,15 +352,14 @@ function ViewerApp() {
 
           <Tooltip title="Logout">
             <IconButton 
-              color="inherit" 
+              className={classes.iconButton}
               onClick={handleLogout}
-              className={classes.button}
             >
               <ExitToAppIcon />
             </IconButton>
           </Tooltip>
-        </Toolbar>
-      </AppBar>
+        </Box>
+      </Box>
 
       {/* Main Content */}
       <Box className={classes.content}>
