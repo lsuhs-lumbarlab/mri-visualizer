@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import { Box, Button, Typography } from '@material-ui/core';
+import { 
+  Box, 
+  Button, 
+  Typography, 
+  Card, 
+  CardContent,
+  IconButton,
+  CircularProgress,
+} from '@material-ui/core';
+import { Info as InfoIcon, Share as ShareIcon } from '@material-ui/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import libraryService from '../services/libraryService';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -38,6 +48,48 @@ const useStyles = makeStyles((theme) => ({
       borderRight: 'none',
     },
   },
+  paneTitle: {
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.background.paper,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    fontWeight: 600,
+  },
+  scrollableList: {
+    flex: 1,
+    overflow: 'auto',
+    padding: theme.spacing(2),
+  },
+  patientCard: {
+    marginBottom: theme.spacing(2),
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    border: `2px solid transparent`,
+    '&:hover': {
+      boxShadow: theme.shadows[4],
+    },
+  },
+  selectedCard: {
+    borderColor: theme.palette.primary.main,
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing(1),
+  },
+  cardActions: {
+    display: 'flex',
+    gap: theme.spacing(0.5),
+  },
+  patientName: {
+    fontWeight: 600,
+    fontSize: '1.1rem',
+  },
+  phiInfo: {
+    color: theme.palette.text.secondary,
+    fontSize: '0.875rem',
+    marginTop: theme.spacing(0.5),
+  },
   emptyState: {
     display: 'flex',
     alignItems: 'center',
@@ -49,12 +101,41 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.text.secondary,
     textAlign: 'center',
   },
+  loadingContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+  },
 }));
 
 const Library = () => {
   const classes = useStyles();
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load patients on mount
+  useEffect(() => {
+    loadPatients();
+  }, []);
+
+  const loadPatients = async () => {
+    setIsLoading(true);
+    try {
+      const response = await libraryService.listAccessiblePatients();
+      if (response.success) {
+        setPatients(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading patients:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -64,6 +145,31 @@ const Library = () => {
   const handleUpload = () => {
     // Placeholder for Step 6
     console.log('Upload clicked - will implement in Step 6');
+  };
+
+  const handlePatientClick = (patient) => {
+    setSelectedPatient(patient);
+  };
+
+  const handlePatientInfo = (e, patient) => {
+    e.stopPropagation(); // Prevent card selection
+    // Placeholder for Step 4
+    console.log('Patient info clicked:', patient);
+  };
+
+  const handlePatientShare = (e, patient) => {
+    e.stopPropagation(); // Prevent card selection
+    // Placeholder for Step 5
+    console.log('Patient share clicked:', patient);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   return (
@@ -92,18 +198,78 @@ const Library = () => {
       <Box className={classes.content}>
         {/* Left Pane - Patient List */}
         <Box className={classes.pane}>
-          <Box className={classes.emptyState}>
-            <Typography variant="h6" className={classes.emptyStateText}>
-              No DICOM studies available yet. Click 'Upload' to add your first study.
-            </Typography>
-          </Box>
+          <Typography variant="h6" className={classes.paneTitle}>
+            Patients
+          </Typography>
+          
+          {isLoading ? (
+            <Box className={classes.loadingContainer}>
+              <CircularProgress />
+            </Box>
+          ) : patients.length === 0 ? (
+            <Box className={classes.emptyState}>
+              <Typography variant="h6" className={classes.emptyStateText}>
+                No DICOM studies available yet. Click 'Upload' to add your first study.
+              </Typography>
+            </Box>
+          ) : (
+            <Box className={classes.scrollableList}>
+              {patients.map((patient) => (
+                <Card
+                  key={patient.id}
+                  className={`${classes.patientCard} ${
+                    selectedPatient?.id === patient.id ? classes.selectedCard : ''
+                  }`}
+                  onClick={() => handlePatientClick(patient)}
+                >
+                  <CardContent>
+                    <Box className={classes.cardHeader}>
+                      <Box>
+                        <Typography className={classes.patientName}>
+                          {patient.name}
+                        </Typography>
+                        <Typography className={classes.phiInfo}>
+                          DOB: {formatDate(patient.dob)}
+                        </Typography>
+                        <Typography className={classes.phiInfo}>
+                          MRN: {patient.phiSummary.patientId}
+                        </Typography>
+                        <Typography className={classes.phiInfo}>
+                          {patient.phiSummary.sex} • {patient.phiSummary.age} years old
+                        </Typography>
+                      </Box>
+                      <Box className={classes.cardActions}>
+                        <IconButton 
+                          size="small"
+                          onClick={(e) => handlePatientInfo(e, patient)}
+                        >
+                          <InfoIcon />
+                        </IconButton>
+                        <IconButton 
+                          size="small"
+                          onClick={(e) => handlePatientShare(e, patient)}
+                        >
+                          <ShareIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          )}
         </Box>
 
         {/* Right Pane - Study List */}
         <Box className={classes.pane}>
+          <Typography variant="h6" className={classes.paneTitle}>
+            Studies
+          </Typography>
           <Box className={classes.emptyState}>
             <Typography variant="body1" className={classes.emptyStateText}>
-              Select a patient to view their studies
+              {selectedPatient 
+                ? 'Studies will appear here (Step 3)' 
+                : 'Select a patient to view their studies'}
             </Typography>
           </Box>
         </Box>
