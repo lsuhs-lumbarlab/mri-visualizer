@@ -66,10 +66,25 @@ const useStyles = makeStyles((theme) => ({
     border: `2px solid transparent`,
     '&:hover': {
       boxShadow: theme.shadows[4],
+      borderColor: theme.palette.action.hover,
     },
   },
   selectedCard: {
     borderColor: theme.palette.primary.main,
+    '&:hover': {
+      boxShadow: 'none',
+      borderColor: theme.palette.primary.main,
+  },
+  },
+  studyCard: {
+    marginBottom: theme.spacing(2),
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    border: `2px solid transparent`,
+    '&:hover': {
+      boxShadow: theme.shadows[4],
+      borderColor: theme.palette.action.hover,
+    },
   },
   cardHeader: {
     display: 'flex',
@@ -85,7 +100,16 @@ const useStyles = makeStyles((theme) => ({
     fontWeight: 600,
     fontSize: '1.1rem',
   },
+  studyDescription: {
+    fontWeight: 600,
+    fontSize: '1rem',
+  },
   phiInfo: {
+    color: theme.palette.text.secondary,
+    fontSize: '0.875rem',
+    marginTop: theme.spacing(0.5),
+  },
+  studyInfo: {
     color: theme.palette.text.secondary,
     fontSize: '0.875rem',
     marginTop: theme.spacing(0.5),
@@ -161,6 +185,23 @@ const Library = () => {
     e.stopPropagation(); // Prevent card selection
     // Placeholder for Step 5
     console.log('Patient share clicked:', patient);
+  };
+
+  const handleStudyClick = (study) => {
+    // Navigate to viewer with studyId
+    navigate(`/viewer/${study.id}`);
+  };
+
+  const handleStudyInfo = (e, study) => {
+    e.stopPropagation(); // Prevent card click
+    // Placeholder for Step 4
+    console.log('Study info clicked:', study);
+  };
+
+  const handleStudyShare = (e, study) => {
+    e.stopPropagation(); // Prevent card click
+    // Placeholder for Step 5
+    console.log('Study share clicked:', study);
   };
 
   const formatDate = (dateString) => {
@@ -265,13 +306,57 @@ const Library = () => {
           <Typography variant="h6" className={classes.paneTitle}>
             Studies
           </Typography>
-          <Box className={classes.emptyState}>
-            <Typography variant="body1" className={classes.emptyStateText}>
-              {selectedPatient 
-                ? 'Studies will appear here (Step 3)' 
-                : 'Select a patient to view their studies'}
-            </Typography>
-          </Box>
+          
+          {!selectedPatient ? (
+            <Box className={classes.emptyState}>
+              <Typography variant="body1" className={classes.emptyStateText}>
+                Select a patient to view their studies
+              </Typography>
+            </Box>
+          ) : (
+            <Box className={classes.scrollableList}>
+              {selectedPatient.studies.map((study) => (
+                <Card
+                  key={study.id}
+                  className={classes.studyCard}
+                  onClick={() => handleStudyClick(study)}
+                >
+                  <CardContent>
+                    <Box className={classes.cardHeader}>
+                      <Box>
+                        <Typography className={classes.studyDescription}>
+                          {study.description}
+                        </Typography>
+                        <Typography className={classes.studyInfo}>
+                          Date: {formatDate(study.date)}
+                        </Typography>
+                        <Typography className={classes.studyInfo}>
+                          Modality: {study.modality}
+                        </Typography>
+                        <Typography className={classes.studyInfo}>
+                          Accession: {study.metadata.accessionNumber}
+                        </Typography>
+                      </Box>
+                      <Box className={classes.cardActions}>
+                        <IconButton 
+                          size="small"
+                          onClick={(e) => handleStudyInfo(e, study)}
+                        >
+                          <InfoIcon />
+                        </IconButton>
+                        <IconButton 
+                          size="small"
+                          onClick={(e) => handleStudyShare(e, study)}
+                        >
+                          <ShareIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>

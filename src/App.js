@@ -51,6 +51,15 @@ function App() {
               }
             />
             <Route
+              path="/viewer/:studyId"
+              element={
+                <ProtectedRoute>
+                  <ViewerApp />
+                </ProtectedRoute>
+              }
+            />
+            {/* Legacy route for backwards compatibility */}
+            <Route
               path="/app"
               element={
                 <ProtectedRoute>
