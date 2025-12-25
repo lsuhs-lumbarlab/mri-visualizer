@@ -13,6 +13,7 @@ import { Info as InfoIcon, Share as ShareIcon } from '@material-ui/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';
+import InfoModal from '../components/InfoModal';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -143,6 +144,16 @@ const Library = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Modal states
+  const [patientInfoModal, setPatientInfoModal] = useState({
+    open: false,
+    patient: null,
+  });
+  const [studyInfoModal, setStudyInfoModal] = useState({
+    open: false,
+    study: null,
+  });
+
   // Load patients on mount
   useEffect(() => {
     loadPatients();
@@ -188,8 +199,7 @@ const Library = () => {
 
   const handlePatientInfo = (e, patient) => {
     e.stopPropagation(); // Prevent card selection
-    // Placeholder for Step 4
-    console.log('Patient info clicked:', patient);
+    setPatientInfoModal({ open: true, patient });
   };
 
   const handlePatientShare = (e, patient) => {
@@ -207,8 +217,7 @@ const Library = () => {
 
   const handleStudyInfo = (e, study) => {
     e.stopPropagation(); // Prevent card click
-    // Placeholder for Step 4
-    console.log('Study info clicked:', study);
+    setStudyInfoModal({ open: true, study });
   };
 
   const handleStudyShare = (e, study) => {
@@ -224,6 +233,34 @@ const Library = () => {
       month: 'short', 
       day: 'numeric' 
     });
+  };
+
+  // Prepare patient info data for modal
+  const getPatientInfoData = (patient) => {
+    if (!patient) return {};
+    return {
+      'Name': patient.name,
+      'Date of Birth': formatDate(patient.dob),
+      'Patient ID': patient.phiSummary.patientId,
+      'Sex': patient.phiSummary.sex,
+      'Age': `${patient.phiSummary.age} years`,
+      'Address': patient.metadata.address,
+      'Phone': patient.metadata.phone,
+      'Email': patient.metadata.email,
+    };
+  };
+
+  // Prepare study info data for modal
+  const getStudyInfoData = (study) => {
+    if (!study) return {};
+    return {
+      'Description': study.description,
+      'Study Date': formatDate(study.date),
+      'Modality': study.modality,
+      'Accession Number': study.metadata.accessionNumber,
+      'Study Instance UID': study.metadata.studyInstanceUID,
+      'Referring Physician': study.metadata.referringPhysician,
+    };
   };
 
   return (
@@ -372,6 +409,22 @@ const Library = () => {
           )}
         </Box>
       </Box>
+
+      {/* Patient Info Modal */}
+      <InfoModal
+        open={patientInfoModal.open}
+        onClose={() => setPatientInfoModal({ open: false, patient: null })}
+        title="Patient Information"
+        data={getPatientInfoData(patientInfoModal.patient)}
+      />
+
+      {/* Study Info Modal */}
+      <InfoModal
+        open={studyInfoModal.open}
+        onClose={() => setStudyInfoModal({ open: false, study: null })}
+        title="Study Information"
+        data={getStudyInfoData(studyInfoModal.study)}
+      />
     </Box>
   );
 };
