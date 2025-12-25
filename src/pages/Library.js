@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';
 import InfoModal from '../components/InfoModal';
+import ShareModal from '../components/ShareModal';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -75,7 +76,7 @@ const useStyles = makeStyles((theme) => ({
     '&:hover': {
       boxShadow: 'none',
       borderColor: theme.palette.primary.main,
-  },
+    },
   },
   studyCard: {
     marginBottom: theme.spacing(2),
@@ -143,7 +144,7 @@ const Library = () => {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  
   // Modal states
   const [patientInfoModal, setPatientInfoModal] = useState({
     open: false,
@@ -152,6 +153,13 @@ const Library = () => {
   const [studyInfoModal, setStudyInfoModal] = useState({
     open: false,
     study: null,
+  });
+  
+  // Share overlay states
+  const [shareModal, setShareModal] = useState({
+    open: false,
+    type: null, // 'patient' or 'study'
+    item: null,
   });
 
   // Load patients on mount
@@ -204,8 +212,7 @@ const Library = () => {
 
   const handlePatientShare = (e, patient) => {
     e.stopPropagation(); // Prevent card selection
-    // Placeholder for Step 5
-    console.log('Patient share clicked:', patient);
+    setShareModal({ open: true, type: 'patient', item: patient });
   };
 
   const handleStudyClick = (study) => {
@@ -222,8 +229,19 @@ const Library = () => {
 
   const handleStudyShare = (e, study) => {
     e.stopPropagation(); // Prevent card click
-    // Placeholder for Step 5
-    console.log('Study share clicked:', study);
+    setShareModal({ open: true, type: 'study', item: study });
+  };
+
+  const handleShare = async (email) => {
+    const { type, item } = shareModal;
+    
+    if (type === 'patient') {
+      return await libraryService.sharePatient(item.id, email);
+    } else if (type === 'study') {
+      return await libraryService.shareStudy(item.id, email);
+    }
+    
+    return { success: false, message: 'Invalid share type' };
   };
 
   const formatDate = (dateString) => {
@@ -424,6 +442,15 @@ const Library = () => {
         onClose={() => setStudyInfoModal({ open: false, study: null })}
         title="Study Information"
         data={getStudyInfoData(studyInfoModal.study)}
+      />
+
+      {/* Share Overlay */}
+      <ShareModal
+        open={shareModal.open}
+        onClose={() => setShareModal({ open: false, type: null, item: null })}
+        onShare={handleShare}
+        title="Share With"
+        itemType={shareModal.type === 'patient' ? 'Patient' : 'Study'}
       />
     </Box>
   );

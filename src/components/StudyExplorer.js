@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Collapse } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { ExpandLess, ExpandMore } from '@material-ui/icons';
-import db from '../../database/db';
+import db from '../database/db';
 
 const useStyles = makeStyles((theme) => ({
   root: {

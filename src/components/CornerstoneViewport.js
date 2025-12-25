@@ -3,8 +3,8 @@ import { Box, Slider, Typography, Paper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import * as cornerstone from 'cornerstone-core';
 import * as cornerstoneTools from 'cornerstone-tools';
-import { enableViewportTools } from '../../services/cornerstoneInit';
-import { ReferenceLines } from '../../services/referenceLines';
+import { enableViewportTools } from '../services/cornerstoneInit';
+import { ReferenceLines } from '../services/referenceLines';
 
 const useStyles = makeStyles((theme) => ({
   container: {
