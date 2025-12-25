@@ -15,6 +15,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
+import UploadModal from '../components/UploadModal';
+import { isDicomFile } from '../services/dicomLoader';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -155,11 +157,19 @@ const Library = () => {
     study: null,
   });
   
-  // Share overlay states
+  // Share modal states
   const [shareModal, setShareModal] = useState({
     open: false,
     type: null, // 'patient' or 'study'
     item: null,
+  });
+
+  // Upload modal states
+  const [uploadModal, setUploadModal] = useState({
+    open: false,
+    progress: 0,
+    status: 'uploading', // 'uploading', 'success', 'error'
+    message: '',
   });
 
   // Load patients on mount
@@ -197,8 +207,118 @@ const Library = () => {
   };
 
   const handleUpload = () => {
-    // Placeholder for Step 6
-    console.log('Upload clicked - will implement in Step 6');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.webkitdirectory = true;
+    input.multiple = true;
+    
+    input.onchange = async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        await processUpload(files);
+      }
+    };
+    
+    input.click();
+  };
+
+  const processUpload = async (files) => {
+    // Filter DICOM files
+    const dicomFiles = [];
+    for (const file of files) {
+      const isDicom = await isDicomFile(file);
+      if (isDicom) {
+        dicomFiles.push(file);
+      }
+    }
+
+    if (dicomFiles.length === 0) {
+      alert('No DICOM files found in the selected folder.');
+      return;
+    }
+
+    // Show upload modal
+    setUploadModal({
+      open: true,
+      progress: 0,
+      status: 'uploading',
+      message: '',
+    });
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setUploadModal(prev => {
+        const newProgress = Math.min(prev.progress + 10, 90);
+        return { ...prev, progress: newProgress };
+      });
+    }, 200);
+
+    try {
+      // Call upload service
+      const result = await libraryService.uploadDicomFolder(dicomFiles);
+      
+      clearInterval(progressInterval);
+
+      if (result.success) {
+        // Set to 100% and show success
+        setUploadModal({
+          open: true,
+          progress: 100,
+          status: 'success',
+          message: `Successfully uploaded ${dicomFiles.length} DICOM file(s)!`,
+        });
+
+        // Refresh patient list after short delay
+        setTimeout(async () => {
+          await loadPatients();
+          // Close modal
+          setTimeout(() => {
+            setUploadModal({
+              open: false,
+              progress: 0,
+              status: 'uploading',
+              message: '',
+            });
+          }, 1500);
+        }, 1000);
+      } else {
+        clearInterval(progressInterval);
+        setUploadModal({
+          open: true,
+          progress: 0,
+          status: 'error',
+          message: result.message || 'Upload failed. Please try again.',
+        });
+
+        // Close error modal after delay
+        setTimeout(() => {
+          setUploadModal({
+            open: false,
+            progress: 0,
+            status: 'uploading',
+            message: '',
+          });
+        }, 3000);
+      }
+    } catch (error) {
+      clearInterval(progressInterval);
+      console.error('Upload error:', error);
+      setUploadModal({
+        open: true,
+        progress: 0,
+        status: 'error',
+        message: 'An error occurred during upload. Please try again.',
+      });
+
+      setTimeout(() => {
+        setUploadModal({
+          open: false,
+          progress: 0,
+          status: 'uploading',
+          message: '',
+        });
+      }, 3000);
+    }
   };
 
   const handlePatientClick = (patient) => {
@@ -444,13 +564,21 @@ const Library = () => {
         data={getStudyInfoData(studyInfoModal.study)}
       />
 
-      {/* Share Overlay */}
+      {/* Share Modal */}
       <ShareModal
         open={shareModal.open}
         onClose={() => setShareModal({ open: false, type: null, item: null })}
         onShare={handleShare}
         title="Share With"
         itemType={shareModal.type === 'patient' ? 'Patient' : 'Study'}
+      />
+
+      {/* Upload Modal */}
+      <UploadModal
+        open={uploadModal.open}
+        progress={uploadModal.progress}
+        status={uploadModal.status}
+        message={uploadModal.message}
       />
     </Box>
   );

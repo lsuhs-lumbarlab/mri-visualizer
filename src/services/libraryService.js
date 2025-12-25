@@ -1,8 +1,10 @@
 // Mock service for DICOM Library
 // This will be replaced with real API calls later
 
+// Store uploaded patients in memory (simulates database)
+let uploadedPatients = [];
+
 // Mock patient data
-// const mockPatients = [];
 const mockPatients = [
   {
     id: 'patient-1',
@@ -112,6 +114,57 @@ const mockPatients = [
   },
 ];
 
+// Generate a new mock patient from uploaded files
+const generateMockPatient = (fileCount) => {
+  const patientNumber = uploadedPatients.length + 4; // Start after existing 3 patients
+  const currentDate = new Date();
+  
+  // Random names for variety
+  const firstNames = ['Michael', 'Sarah', 'David', 'Emily', 'James', 'Lisa', 'Christopher', 'Jessica'];
+  const lastNames = ['Williams', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Anderson'];
+  
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  
+  // Random age between 30-70
+  const age = 30 + Math.floor(Math.random() * 40);
+  const birthYear = currentDate.getFullYear() - age;
+  
+  // Random sex
+  const sex = Math.random() > 0.5 ? 'M' : 'F';
+  
+  const newPatient = {
+    id: `patient-${patientNumber}`,
+    name: `${firstName} ${lastName}`,
+    dob: `${birthYear}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+    phiSummary: {
+      patientId: `MRN-${String(patientNumber).padStart(6, '0')}`,
+      sex: sex,
+      age: age,
+    },
+    metadata: {
+      address: `${Math.floor(Math.random() * 9999)} ${['Main', 'Oak', 'Maple', 'Pine'][Math.floor(Math.random() * 4)]} St, City, State`,
+      phone: `555-0${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+    },
+    studies: [
+      {
+        id: `study-upload-${patientNumber}`,
+        description: 'Uploaded Study - Lumbar Spine MRI',
+        date: currentDate.toISOString().split('T')[0],
+        modality: 'MR',
+        metadata: {
+          studyInstanceUID: `1.2.840.113619.2.${patientNumber}.1.1`,
+          accessionNumber: `ACC-UP${String(patientNumber).padStart(3, '0')}`,
+          referringPhysician: 'Dr. Upload',
+        },
+      },
+    ],
+  };
+  
+  return newPatient;
+};
+
 // Simulate API delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -119,19 +172,27 @@ const libraryService = {
   // Get all patients accessible to the user
   async listAccessiblePatients() {
     await delay(500); // Simulate network delay
+    
+    // Return base mock patients + any uploaded patients
     return {
       success: true,
-      data: mockPatients,
+      data: [...mockPatients, ...uploadedPatients],
     };
   },
 
-  // Upload DICOM folder (placeholder)
+  // Upload DICOM folder (placeholder with mock patient generation)
   async uploadDicomFolder(files) {
-    await delay(1000);
+    await delay(2000); // Simulate 2 second upload
     console.log('Upload placeholder called with files:', files);
+    
+    // Generate a new mock patient
+    const newPatient = generateMockPatient(files.length);
+    uploadedPatients.push(newPatient);
+    
     return {
       success: true,
-      message: 'Upload functionality will be implemented in Step 6',
+      message: `Successfully uploaded ${files.length} DICOM file(s)`,
+      patient: newPatient,
     };
   },
 
@@ -141,7 +202,7 @@ const libraryService = {
     console.log(`Share patient ${patientId} with ${targetEmail}`);
     return {
       success: true,
-      message: 'Share functionality will be implemented in Step 5',
+      message: 'Patient shared successfully',
     };
   },
 
@@ -151,7 +212,7 @@ const libraryService = {
     console.log(`Share study ${studyId} with ${targetEmail}`);
     return {
       success: true,
-      message: 'Share functionality will be implemented in Step 5',
+      message: 'Study shared successfully',
     };
   },
 };
