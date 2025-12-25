@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, CircularProgress } from '@material-ui/core';
-import MainLayout from '../components/Layout/MainLayout';
-import Header from '../components/Layout/Header';
+import { 
+  Box, 
+  CircularProgress, 
+  AppBar, 
+  Toolbar, 
+  IconButton, 
+  Tooltip 
+} from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+import FolderOpenIcon from '@material-ui/icons/FolderOpen';
+import GridOnIcon from '@material-ui/icons/GridOn';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import StudyExplorer from '../components/StudyExplorer/StudyExplorer';
 import CornerstoneViewport from '../components/Viewport/CornerstoneViewport';
 import { initCornerstone } from '../services/cornerstoneInit';
@@ -9,11 +19,57 @@ import { loadDicomFile, loadSeriesImageStack, isDicomFile } from '../services/di
 import { formatDicomDate, formatDicomTime } from '../utils/dateFormatter';
 import db from '../database/db';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const useStyles = makeStyles((theme) => ({
+  // Layout styles
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    backgroundColor: theme.palette.background.default,
+  },
+  content: {
+    display: 'flex',
+    flex: 1,
+    overflow: 'hidden',
+  },
+  sidebar: {
+    width: 200,
+    borderRight: `1px solid ${theme.palette.divider}`,
+    overflow: 'auto',
+    backgroundColor: theme.palette.background.paper,
+  },
+  viewportArea: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'row',
+    padding: theme.spacing(1),
+    gap: theme.spacing(1),
+  },
+  // Header styles
+  appBar: {
+    zIndex: theme.zIndex.drawer + 1,
+  },
+  spacer: {
+    flexGrow: 1,
+  },
+  button: {
+    marginLeft: theme.spacing(2),
+  },
+  activeButton: {
+    color: theme.palette.primary.light,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+}));
 
 function ViewerApp() {
+  const classes = useStyles();
   const { logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [hasFiles, setHasFiles] = useState(false);
   const [viewportKey, setViewportKey] = useState(0);
   const [referenceLinesEnabled, setReferenceLinesEnabled] = useState(false);
@@ -103,8 +159,6 @@ function ViewerApp() {
   };
 
   const handleFilesSelected = async (files) => {
-    setIsLoading(true);
-    
     try {
       // Clear everything first
       await resetAppState();
@@ -142,8 +196,6 @@ function ViewerApp() {
     } catch (error) {
       console.error('Error loading files:', error);
       alert('Error loading DICOM files. Check console for details.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -212,6 +264,35 @@ function ViewerApp() {
     logout();
   };
 
+  // Handle back to library
+  const handleBackToLibrary = () => {
+    // Pass the patientId back to Library to restore selection
+    if (location.state?.patientId) {
+      navigate('/library', {
+        state: { patientId: location.state.patientId }
+      });
+    } else {
+      navigate('/library');
+    }
+  };
+
+  // Handle open folder
+  const handleOpenFolder = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.webkitdirectory = true;
+    input.multiple = true;
+    
+    input.onchange = (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        handleFilesSelected(files);
+      }
+    };
+    
+    input.click();
+  };
+
   if (!isInitialized) {
     return (
       <Box
@@ -226,23 +307,65 @@ function ViewerApp() {
   }
 
   return (
-    <>
-      <MainLayout
-        header={
-          <Header 
-            onOpenFiles={handleFilesSelected}
-            referenceLinesEnabled={referenceLinesEnabled}
-            onToggleReferenceLines={toggleReferenceLines}
-            onLogout={handleLogout}
-          />
-        }
-        sidebar={
+    <Box className={classes.root}>
+      {/* Header */}
+      <AppBar position="static" className={classes.appBar}>
+        <Toolbar>
+          <Tooltip title="Back to Library">
+            <IconButton 
+              color="inherit" 
+              onClick={handleBackToLibrary}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <div className={classes.spacer} />
+          
+          <Tooltip title="Open DICOM Folder">
+            <IconButton 
+              color="inherit" 
+              onClick={handleOpenFolder}
+              className={classes.button}
+            >
+              <FolderOpenIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={referenceLinesEnabled ? "Hide Reference Lines" : "Show Reference Lines"}>
+            <IconButton 
+              color="inherit" 
+              onClick={toggleReferenceLines}
+              className={`${classes.button} ${referenceLinesEnabled ? classes.activeButton : ''}`}
+            >
+              <GridOnIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Logout">
+            <IconButton 
+              color="inherit" 
+              onClick={handleLogout}
+              className={classes.button}
+            >
+              <ExitToAppIcon />
+            </IconButton>
+          </Tooltip>
+        </Toolbar>
+      </AppBar>
+
+      {/* Main Content */}
+      <Box className={classes.content}>
+        {/* Sidebar */}
+        <Box className={classes.sidebar}>
           <StudyExplorer
             key={hasFiles ? viewportKey : 'empty'}
             onSeriesSelect={handleSeriesSelect}
           />
-        }
-        viewports={[
+        </Box>
+
+        {/* Viewport Area */}
+        <Box className={classes.viewportArea}>
           <CornerstoneViewport
             key={`sagittal-${viewportKey}`}
             ref={el => viewportRefs.current.sagittal = el}
@@ -260,7 +383,7 @@ function ViewerApp() {
             dateOfBirth={patientInfo.dateOfBirth}
             studyDate={patientInfo.studyDate}
             studyTime={patientInfo.studyTime}
-          />,
+          />
           <CornerstoneViewport
             key={`axial-${viewportKey}`}
             ref={el => viewportRefs.current.axial = el}
@@ -278,7 +401,7 @@ function ViewerApp() {
             dateOfBirth={patientInfo.dateOfBirth}
             studyDate={patientInfo.studyDate}
             studyTime={patientInfo.studyTime}
-          />,
+          />
           <CornerstoneViewport
             key={`coronal-${viewportKey}`}
             ref={el => viewportRefs.current.coronal = el}
@@ -297,25 +420,9 @@ function ViewerApp() {
             studyDate={patientInfo.studyDate}
             studyTime={patientInfo.studyTime}
           />
-        ]}
-      />
-      {isLoading && (
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          bgcolor="rgba(0,0,0,0.7)"
-          zIndex={9999}
-        >
-          <CircularProgress size={60} />
         </Box>
-      )}
-    </>
+      </Box>
+    </Box>
   );
 }
 

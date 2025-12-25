@@ -11,7 +11,7 @@ import {
 } from '@material-ui/core';
 import { Info as InfoIcon, Share as ShareIcon } from '@material-ui/icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';
 
 const useStyles = makeStyles((theme) => ({
@@ -137,6 +137,7 @@ const Library = () => {
   const classes = useStyles();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -146,6 +147,16 @@ const Library = () => {
   useEffect(() => {
     loadPatients();
   }, []);
+
+  // Restore selected patient from navigation state
+  useEffect(() => {
+    if (location.state?.patientId && patients.length > 0) {
+      const patient = patients.find(p => p.id === location.state.patientId);
+      if (patient) {
+        setSelectedPatient(patient);
+      }
+    }
+  }, [location.state, patients]);
 
   const loadPatients = async () => {
     setIsLoading(true);
@@ -188,8 +199,10 @@ const Library = () => {
   };
 
   const handleStudyClick = (study) => {
-    // Navigate to viewer with studyId
-    navigate(`/viewer/${study.id}`);
+    // Navigate to viewer with studyId AND patientId in state
+    navigate(`/viewer/${study.id}`, {
+      state: { patientId: selectedPatient.id }
+    });
   };
 
   const handleStudyInfo = (e, study) => {
