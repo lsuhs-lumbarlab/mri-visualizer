@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
+import db from '../database/db';
 
 const AuthContext = createContext(null);
 
@@ -79,7 +80,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Clear IndexedDB - remove all DICOM data for privacy/security
+      console.log('Clearing IndexedDB on logout...');
+      await db.files.clear();
+      await db.series.clear();
+      await db.studies.clear();
+      await db.images.clear();
+      console.log('IndexedDB cleared successfully');
+    } catch (error) {
+      console.error('Error clearing IndexedDB on logout:', error);
+      // Continue with logout even if DB clear fails
+    }
+    
     // Clear localStorage
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUser');

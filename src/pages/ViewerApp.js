@@ -274,8 +274,8 @@ function ViewerApp() {
   };
 
   // Handle logout
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
   };
 
   // Handle back to library

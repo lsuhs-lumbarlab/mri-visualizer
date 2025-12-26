@@ -201,8 +201,8 @@ const Library = () => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -365,12 +365,27 @@ const Library = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    // Handle already formatted or invalid dates
+    if (!dateString || dateString === 'Unknown' || dateString === 'Unknown Date') {
+      return 'Unknown';
+    }
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Check if valid date
+      if (isNaN(date.getTime())) {
+        return 'Unknown';
+      }
+      
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      return 'Unknown';
+    }
   };
 
   // Prepare patient info data for modal
@@ -381,10 +396,10 @@ const Library = () => {
       'Date of Birth': formatDate(patient.dob),
       'Patient ID': patient.phiSummary.patientId,
       'Sex': patient.phiSummary.sex,
-      'Age': `${patient.phiSummary.age} years`,
-      'Address': patient.metadata.address,
-      'Phone': patient.metadata.phone,
-      'Email': patient.metadata.email,
+      'Age': patient.phiSummary.age ? patient.phiSummary.age : 'N/A',
+      'Address': patient.metadata.address || 'N/A',
+      'Phone': patient.metadata.phone || 'N/A',
+      'Email': patient.metadata.email || 'N/A',
     };
   };
 
@@ -464,7 +479,7 @@ const Library = () => {
                           MRN: {patient.phiSummary.patientId}
                         </Typography>
                         <Typography className={classes.phiInfo}>
-                          {patient.phiSummary.sex} • {patient.phiSummary.age} years old
+                          {patient.phiSummary.sex} • {patient.phiSummary.age ? patient.phiSummary.age : 'N/A'}
                         </Typography>
                       </Box>
                       <Box className={classes.cardActions}>
@@ -516,7 +531,7 @@ const Library = () => {
                           {study.description}
                         </Typography>
                         <Typography className={classes.studyInfo}>
-                          Date: {formatDate(study.date)}
+                          Study Date: {formatDate(study.date)}
                         </Typography>
                         <Typography className={classes.studyInfo}>
                           Modality: {study.modality}

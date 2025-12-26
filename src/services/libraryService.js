@@ -18,14 +18,14 @@ const libraryService = {
         const patientId = study.patientID || 'UNKNOWN';
         
         if (!patientMap.has(patientId)) {
-          // Create patient entry
+          // Create patient entry with properly formatted data
           patientMap.set(patientId, {
             id: patientId,
-            name: study.patientName || 'Unknown Patient',
-            dob: study.patientBirthDate || '',
+            name: parsePatientName(study.patientName), // Parse name properly
+            dob: formatBirthDate(study.patientBirthDate), // Format birth date
             phiSummary: {
               patientId: patientId,
-              sex: study.patientSex || 'U',
+              sex: formatSex(study.patientSex), // Format sex/gender
               age: calculateAge(study.patientBirthDate),
             },
             metadata: {
@@ -146,9 +146,51 @@ const libraryService = {
   },
 };
 
+// Helper function to parse DICOM patient name
+// DICOM format: LastName^FirstName^MiddleName^Prefix^Suffix
+function parsePatientName(dicomName) {
+  if (!dicomName) return 'Unknown Patient';
+  
+  // Remove any leading/trailing whitespace
+  const cleaned = dicomName.trim();
+  
+  // Split by ^ delimiter
+  const parts = cleaned.split('^').map(part => part.trim()).filter(part => part.length > 0);
+  
+  if (parts.length === 0) return 'Unknown Patient';
+  
+  // Format: "LastName, FirstName MiddleName"
+  // [LastName] -> "LastName"
+  // [LastName, FirstName] -> "LastName, FirstName"
+  // [LastName, FirstName, MiddleName, ...] -> "LastName, FirstName MiddleName ..."
+  
+  if (parts.length === 1) {
+    return parts[0]; // Just last name
+  } else {
+    // LastName, FirstName MiddleName ...
+    const [lastName, firstName, ...rest] = parts;
+    const restNames = rest.length > 0 ? ` ${rest.join(' ')}` : '';
+    return `${lastName}, ${firstName}${restNames}`;
+  }
+}
+
+// Helper function to format DICOM sex/gender
+function formatSex(dicomSex) {
+  if (!dicomSex || dicomSex === 'U') return 'Unknown';
+  
+  const sexMap = {
+    'M': 'Male',
+    'F': 'Female',
+    'O': 'Other',
+    'U': 'Unknown',
+  };
+  
+  return sexMap[dicomSex.toUpperCase()] || 'Unknown';
+}
+
 // Helper function to calculate age from birth date
 function calculateAge(birthDate) {
-  if (!birthDate) return null;
+  if (!birthDate || birthDate.length < 8) return null;
   
   try {
     // DICOM date format is YYYYMMDD
@@ -156,7 +198,14 @@ function calculateAge(birthDate) {
     const month = parseInt(birthDate.substring(4, 6));
     const day = parseInt(birthDate.substring(6, 8));
     
+    // Validate numbers
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    
     const birth = new Date(year, month - 1, day);
+    
+    // Check if valid date
+    if (isNaN(birth.getTime())) return null;
+    
     const today = new Date();
     
     let age = today.getFullYear() - birth.getFullYear();
@@ -166,6 +215,9 @@ function calculateAge(birthDate) {
       age--;
     }
     
+    // Return null if age is invalid (negative or > 150)
+    if (age < 0 || age > 150) return null;
+    
     return age;
   } catch (error) {
     return null;
@@ -174,7 +226,7 @@ function calculateAge(birthDate) {
 
 // Helper function to format study date for display
 function formatStudyDate(studyDate) {
-  if (!studyDate) return '';
+  if (!studyDate || studyDate.length < 8) return 'Unknown Date';
   
   try {
     // DICOM date format is YYYYMMDD
@@ -182,10 +234,29 @@ function formatStudyDate(studyDate) {
     const month = studyDate.substring(4, 6);
     const day = studyDate.substring(6, 8);
     
+    // Validate
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+    
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
+      return 'Unknown Date';
+    }
+    
+    if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) {
+      return 'Unknown Date';
+    }
+    
     return `${year}-${month}-${day}`;
   } catch (error) {
-    return studyDate;
+    return 'Unknown Date';
   }
+}
+
+// Helper function to format birth date for display  
+function formatBirthDate(birthDate) {
+  const formatted = formatStudyDate(birthDate);
+  return formatted === 'Unknown Date' ? 'Unknown' : formatted;
 }
 
 export default libraryService;
