@@ -9,17 +9,17 @@ const useStyles = makeStyles((theme) => ({
     width: '100%',
   },
   title: {
-    fontSize: '1.5rem',  // Adjust title size here
+    fontSize: '1.5rem',
     fontWeight: 600,
     marginBottom: theme.spacing(1),
   },
   studyItem: {
-    paddingTop: theme.spacing(1),    // Adjust study item spacing here
+    paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
   },
   nested: {
     paddingLeft: theme.spacing(2),
-    paddingTop: theme.spacing(0.5),    // Adjust nested spacing here
+    paddingTop: theme.spacing(0.5),
     paddingBottom: theme.spacing(0.5),
   },
   seriesItem: {
@@ -33,62 +33,91 @@ const useStyles = makeStyles((theme) => ({
   },
   // Custom text sizing for list items
   studyPrimary: {
-    fontSize: '0.875rem',  // Adjust study name font size
+    fontSize: '0.875rem',
     fontWeight: 500,
   },
   studySecondary: {
-    fontSize: '0.875rem',   // Adjust study details font size
+    fontSize: '0.875rem',
   },
   seriesPrimary: {
-    fontSize: '0.8rem',    // Adjust series name font size
+    fontSize: '0.8rem',
   },
   seriesSecondary: {
-    fontSize: '0.8rem',    // Adjust series details font size
+    fontSize: '0.8rem',
   },
 }));
 
-const StudyExplorer = ({ onSeriesSelect }) => {
+// Helper function to parse DICOM patient name (same as in libraryService.js)
+// DICOM format: LastName^FirstName^MiddleName^Prefix^Suffix
+const parsePatientName = (dicomName) => {
+  if (!dicomName) return 'Unknown Patient';
+  
+  // Remove any leading/trailing whitespace
+  const cleaned = dicomName.trim();
+  
+  // Split by ^ delimiter
+  const parts = cleaned.split('^').map(part => part.trim()).filter(part => part.length > 0);
+  
+  if (parts.length === 0) return 'Unknown Patient';
+  
+  // Format: "LastName, FirstName MiddleName"
+  if (parts.length === 1) {
+    return parts[0]; // Just last name
+  } else {
+    // LastName, FirstName MiddleName ...
+    const [lastName, firstName, ...rest] = parts;
+    const restNames = rest.length > 0 ? ` ${rest.join(' ')}` : '';
+    return `${lastName}, ${firstName}${restNames}`;
+  }
+};
+
+const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
   const classes = useStyles();
-  const [studies, setStudies] = useState([]);
-  const [openStudies, setOpenStudies] = useState({});
+  const [study, setStudy] = useState(null);
+  const [isOpen, setIsOpen] = useState(true);
   const [selectedSeries, setSelectedSeries] = useState({});
 
   useEffect(() => {
-    // Load studies whenever component mounts
-    loadStudies();
-  }, []); // Empty dependency array means this runs on mount
+    // Load the specific study whenever studyInstanceUID changes
+    if (studyInstanceUID) {
+      loadStudy(studyInstanceUID);
+    }
+  }, [studyInstanceUID]);
 
-  const loadStudies = async () => {
+  const loadStudy = async (uid) => {
     try {
-      const allStudies = await db.studies.toArray();
-      const studiesWithSeries = await Promise.all(
-        allStudies.map(async (study) => {
-          const series = await db.series
-            .where('studyInstanceUID')
-            .equals(study.studyInstanceUID)
-            .toArray();
-          return { ...study, series };
-        })
-      );
-      setStudies(studiesWithSeries);
+      // Load the specific study from IndexedDB
+      const studyData = await db.studies.get(uid);
       
-      // Auto-expand first study
-      if (studiesWithSeries.length > 0) {
-        setOpenStudies({ [studiesWithSeries[0].studyInstanceUID]: true });
+      if (!studyData) {
+        console.error('Study not found:', uid);
+        return;
       }
+
+      // Load all series for this study
+      const series = await db.series
+        .where('studyInstanceUID')
+        .equals(uid)
+        .toArray();
+
+      // Combine study and series data
+      const studyWithSeries = {
+        ...studyData,
+        series: series,
+      };
+
+      setStudy(studyWithSeries);
+      setIsOpen(true); // Auto-expand the study
+      setSelectedSeries({}); // Reset selected series
       
-      // Reset selected series
-      setSelectedSeries({});
+      console.log('Study loaded in explorer:', studyWithSeries);
     } catch (error) {
-      console.error('Error loading studies:', error);
+      console.error('Error loading study in explorer:', error);
     }
   };
 
-  const handleStudyClick = (studyUID) => {
-    setOpenStudies((prev) => ({
-      ...prev,
-      [studyUID]: !prev[studyUID],
-    }));
+  const handleStudyClick = () => {
+    setIsOpen(prev => !prev);
   };
 
   const handleSeriesClick = async (series) => {
@@ -99,33 +128,53 @@ const StudyExplorer = ({ onSeriesSelect }) => {
     onSeriesSelect(series);
   };
 
+  if (!study) {
+    return (
+      <Box className={classes.root}>
+        <Typography className={classes.title}>
+          Study Explorer
+        </Typography>
+        <Typography variant="body2" style={{ padding: 16, textAlign: 'center' }}>
+          Loading study...
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box className={classes.root}>
       <Typography className={classes.title}>
         Study Explorer
       </Typography>
       <List dense>
-        {studies.map((study) => (
-          <React.Fragment key={study.studyInstanceUID}>
-            <ListItem 
-              button 
-              onClick={() => handleStudyClick(study.studyInstanceUID)}
-              className={classes.studyItem}
-            >
-              <ListItemText
-                primary={study.patientName || 'Unknown Patient'}
-                secondary={`${study.studyDate || 'No date'} - ${
-                  study.studyDescription || 'No description'
-                }`}
-                primaryTypographyProps={{ className: classes.studyPrimary }}
-                secondaryTypographyProps={{ className: classes.studySecondary }}
-              />
-              {openStudies[study.studyInstanceUID] ? <ExpandLess /> : <ExpandMore />}
-            </ListItem>
-            
-            <Collapse in={openStudies[study.studyInstanceUID]} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding dense>
-                {study.series.map((series) => (
+        <React.Fragment key={study.studyInstanceUID}>
+          <ListItem 
+            button 
+            onClick={handleStudyClick}
+            className={classes.studyItem}
+          >
+            <ListItemText
+              primary={parsePatientName(study.patientName)}
+              secondary={`${study.studyDate || 'No date'} - ${
+                study.studyDescription || 'No description'
+              }`}
+              primaryTypographyProps={{ className: classes.studyPrimary }}
+              secondaryTypographyProps={{ className: classes.studySecondary }}
+            />
+            {isOpen ? <ExpandLess /> : <ExpandMore />}
+          </ListItem>
+          
+          <Collapse in={isOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding dense>
+              {study.series.length === 0 ? (
+                <ListItem className={classes.nested}>
+                  <ListItemText
+                    primary="No series available"
+                    primaryTypographyProps={{ className: classes.seriesPrimary }}
+                  />
+                </ListItem>
+              ) : (
+                study.series.map((series) => (
                   <ListItem
                     key={series.seriesInstanceUID}
                     button
@@ -138,16 +187,16 @@ const StudyExplorer = ({ onSeriesSelect }) => {
                   >
                     <ListItemText
                       primary={`${series.orientation} - ${series.seriesDescription || 'No description'}`}
-                      secondary={`Series ${series.seriesNumber || 'N/A'}`}
+                      secondary={`Series ${series.seriesNumber || 'N/A'} - ${series.modality || 'N/A'}`}
                       primaryTypographyProps={{ className: classes.seriesPrimary }}
                       secondaryTypographyProps={{ className: classes.seriesSecondary }}
                     />
                   </ListItem>
-                ))}
-              </List>
-            </Collapse>
-          </React.Fragment>
-        ))}
+                ))
+              )}
+            </List>
+          </Collapse>
+        </React.Fragment>
       </List>
     </Box>
   );

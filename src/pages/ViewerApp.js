@@ -13,11 +13,11 @@ import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
 import { initCornerstone } from '../services/cornerstoneInit';
-import { loadDicomFile, loadSeriesImageStack, isDicomFile } from '../services/dicomLoader';
+import { loadSeriesImageStack } from '../services/dicomLoader';
 import { formatDicomDate, formatDicomTime } from '../utils/dateFormatter';
 import db from '../database/db';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 const useStyles = makeStyles((theme) => ({
   // Layout styles
@@ -78,12 +78,14 @@ function ViewerApp() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { studyId } = useParams(); // Get studyInstanceUID from URL
 
   const [isInitialized, setIsInitialized] = useState(false);
-  const [hasFiles, setHasFiles] = useState(false);
+  const [studyLoaded, setStudyLoaded] = useState(false);
   const [viewportKey, setViewportKey] = useState(0);
   const [referenceLinesEnabled, setReferenceLinesEnabled] = useState(false);
   const [activeViewport, setActiveViewport] = useState(null);
+  const [currentStudyUID, setCurrentStudyUID] = useState(null);
   const [patientInfo, setPatientInfo] = useState({
     patientName: '',
     dateOfBirth: '',
@@ -103,17 +105,13 @@ function ViewerApp() {
     coronal: null,
   });
 
+  // Initialize Cornerstone on mount
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       // Initialize Cornerstone
       initCornerstone();
-
-      // REMOVED: clearDatabase() call
-      // Previous behavior: cleared IndexedDB on every page load
-      // New behavior: IndexedDB persists, studies uploaded from Library remain available
-      // This allows refreshing the viewer without losing data
 
       if (!cancelled) {
         setIsInitialized(true);
@@ -125,98 +123,56 @@ function ViewerApp() {
     };
   }, []);
 
-  // Keep clearDatabase function for potential future use (e.g., explicit clear action)
-  const clearDatabase = async () => {
+  // Load study data when component mounts or studyId changes
+  useEffect(() => {
+    if (isInitialized && studyId) {
+      loadStudy(studyId);
+    }
+  }, [isInitialized, studyId]);
+
+  const loadStudy = async (studyInstanceUID) => {
     try {
-      await db.files.clear();
-      await db.series.clear();
-      await db.studies.clear();
-      await db.images.clear();
-      setHasFiles(false);
-      console.log('Database cleared');
+      console.log('Loading study:', studyInstanceUID);
+      
+      // Load study from IndexedDB
+      const study = await db.studies.get(studyInstanceUID);
+      
+      if (!study) {
+        console.error('Study not found in database:', studyInstanceUID);
+        alert('Study not found. Please upload DICOM files in the Library.');
+        navigate('/library');
+        return;
+      }
+
+      console.log('Study loaded:', study);
+
+      // Set current study UID for StudyExplorer
+      setCurrentStudyUID(studyInstanceUID);
+
+      // Load patient info for header display
+      setPatientInfo({
+        patientName: study.patientName || 'Unknown Patient',
+        dateOfBirth: formatDicomDate(study.patientBirthDate),
+        studyDate: formatDicomDate(study.studyDate),
+        studyTime: formatDicomTime(study.studyTime),
+      });
+
+      setStudyLoaded(true);
+      console.log('Study loaded successfully');
     } catch (error) {
-      console.error('Error clearing database:', error);
+      console.error('Error loading study:', error);
+      alert('Error loading study. Please try again.');
     }
   };
-
-  /* COMMENTED OUT - No longer needed, loading only from Library
-  const resetAppState = async () => {
-    // Clear database
-    await clearDatabase();
-    
-    // Reset viewport data
-    setViewportData({
-      sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-      axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-      coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-    });
-    
-    // Reset patient info
-    setPatientInfo({
-      patientName: '',
-      dateOfBirth: '',
-      studyDate: '',
-      studyTime: '',
-    });
-    
-    // Reset reference lines
-    setReferenceLinesEnabled(false);
-    
-    // Reset active viewport
-    setActiveViewport(null);
-    
-    // Increment key to force remount of viewports
-    setViewportKey(prev => prev + 1);
-    
-    console.log('App state reset complete');
-  };
-
-  const handleFilesSelected = async (files) => {
-    try {
-      // Clear everything first
-      await resetAppState();
-      
-      // Load all DICOM files
-      let loadedCount = 0;
-      for (const file of files) {
-        // Check if file is DICOM by content, not just extension
-        const isDicom = await isDicomFile(file);
-        if (isDicom) {
-          await loadDicomFile(file);
-          loadedCount++;
-        }
-      }
-      
-      if (loadedCount > 0) {
-        setHasFiles(true);
-        
-        // Load patient info from the first study
-        const studies = await db.studies.toArray();
-        if (studies.length > 0) {
-          const study = studies[0];
-          setPatientInfo({
-            patientName: study.patientName || 'Unknown',
-            dateOfBirth: formatDicomDate(study.patientBirthDate),
-            studyDate: formatDicomDate(study.studyDate),
-            studyTime: formatDicomTime(study.studyTime),
-          });
-        }
-        
-        console.log(`Loaded ${loadedCount} DICOM file(s)`);
-      } else {
-        alert('No valid DICOM files found in the selected files.');
-      }
-    } catch (error) {
-      console.error('Error loading files:', error);
-      alert('Error loading DICOM files. Check console for details.');
-    }
-  };
-  */
 
   const handleSeriesSelect = async (series) => {
     try {
+      console.log('Loading series:', series);
+      
       const imageIds = await loadSeriesImageStack(series.seriesInstanceUID);
       const orientation = series.orientation.toLowerCase();
+
+      console.log(`Loaded ${imageIds.length} images for ${orientation} orientation`);
 
       setViewportData((prev) => ({
         ...prev,
@@ -290,25 +246,6 @@ function ViewerApp() {
     }
   };
 
-  /* COMMENTED OUT - No longer need folder picker in Viewer
-  // Handle open folder
-  const handleOpenFolder = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.webkitdirectory = true;
-    input.multiple = true;
-    
-    input.onchange = (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length > 0) {
-        handleFilesSelected(files);
-      }
-    };
-    
-    input.click();
-  };
-  */
-
   if (!isInitialized) {
     return (
       <Box className={classes.root}>
@@ -332,17 +269,6 @@ function ViewerApp() {
               <ArrowBackIcon />
             </IconButton>
           </Tooltip>
-          
-          {/* COMMENTED OUT - No longer need folder picker
-          <Tooltip title="Open Folder">
-            <IconButton 
-              className={classes.iconButton}
-              onClick={handleOpenFolder}
-            >
-              <FolderOpenIcon />
-            </IconButton>
-          </Tooltip>
-          */}
         </Box>
 
         <Box className={classes.headerRight}>
@@ -370,7 +296,16 @@ function ViewerApp() {
       <Box className={classes.content}>
         {/* Sidebar - Study Explorer */}
         <Box className={classes.sidebar}>
-          <StudyExplorer onSeriesSelect={handleSeriesSelect} />
+          {studyLoaded && currentStudyUID ? (
+            <StudyExplorer 
+              studyInstanceUID={currentStudyUID}
+              onSeriesSelect={handleSeriesSelect} 
+            />
+          ) : (
+            <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+              <CircularProgress size={24} />
+            </Box>
+          )}
         </Box>
 
         {/* Viewport Area */}
