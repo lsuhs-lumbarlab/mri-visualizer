@@ -6,7 +6,7 @@ import {
   Tooltip 
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import FolderOpenIcon from '@material-ui/icons/FolderOpen';
+// import FolderOpenIcon from '@material-ui/icons/FolderOpen'; // COMMENTED OUT - no longer need folder picker
 import GridOnIcon from '@material-ui/icons/GridOn';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
@@ -110,10 +110,11 @@ function ViewerApp() {
       // Initialize Cornerstone
       initCornerstone();
 
-      // Clear database on app start (don't persist across refreshes)
-      await clearDatabase();
+      // REMOVED: clearDatabase() call
+      // Previous behavior: cleared IndexedDB on every page load
+      // New behavior: IndexedDB persists, studies uploaded from Library remain available
+      // This allows refreshing the viewer without losing data
 
-      // Only render the app after DB is cleared to avoid stale sidebar state
       if (!cancelled) {
         setIsInitialized(true);
       }
@@ -124,6 +125,7 @@ function ViewerApp() {
     };
   }, []);
 
+  // Keep clearDatabase function for potential future use (e.g., explicit clear action)
   const clearDatabase = async () => {
     try {
       await db.files.clear();
@@ -137,6 +139,7 @@ function ViewerApp() {
     }
   };
 
+  /* COMMENTED OUT - No longer needed, loading only from Library
   const resetAppState = async () => {
     // Clear database
     await clearDatabase();
@@ -208,6 +211,7 @@ function ViewerApp() {
       alert('Error loading DICOM files. Check console for details.');
     }
   };
+  */
 
   const handleSeriesSelect = async (series) => {
     try {
@@ -286,6 +290,7 @@ function ViewerApp() {
     }
   };
 
+  /* COMMENTED OUT - No longer need folder picker in Viewer
   // Handle open folder
   const handleOpenFolder = () => {
     const input = document.createElement('input');
@@ -302,16 +307,14 @@ function ViewerApp() {
     
     input.click();
   };
+  */
 
   if (!isInitialized) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-      >
-        <CircularProgress />
+      <Box className={classes.root}>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+        </Box>
       </Box>
     );
   }
@@ -329,10 +332,9 @@ function ViewerApp() {
               <ArrowBackIcon />
             </IconButton>
           </Tooltip>
-        </Box>
-        
-        <Box className={classes.headerRight}>
-          <Tooltip title="Open DICOM Folder">
+          
+          {/* COMMENTED OUT - No longer need folder picker
+          <Tooltip title="Open Folder">
             <IconButton 
               className={classes.iconButton}
               onClick={handleOpenFolder}
@@ -340,10 +342,13 @@ function ViewerApp() {
               <FolderOpenIcon />
             </IconButton>
           </Tooltip>
+          */}
+        </Box>
 
-          <Tooltip title={referenceLinesEnabled ? "Hide Reference Lines" : "Show Reference Lines"}>
-            <IconButton 
-              className={`${classes.iconButton} ${referenceLinesEnabled ? classes.activeButton : ''}`}
+        <Box className={classes.headerRight}>
+          <Tooltip title="Toggle Reference Lines">
+            <IconButton
+              className={referenceLinesEnabled ? classes.activeButton : classes.iconButton}
               onClick={toggleReferenceLines}
             >
               <GridOnIcon />
@@ -363,12 +368,9 @@ function ViewerApp() {
 
       {/* Main Content */}
       <Box className={classes.content}>
-        {/* Sidebar */}
+        {/* Sidebar - Study Explorer */}
         <Box className={classes.sidebar}>
-          <StudyExplorer
-            key={hasFiles ? viewportKey : 'empty'}
-            onSeriesSelect={handleSeriesSelect}
-          />
+          <StudyExplorer onSeriesSelect={handleSeriesSelect} />
         </Box>
 
         {/* Viewport Area */}
