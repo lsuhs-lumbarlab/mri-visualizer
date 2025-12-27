@@ -41,6 +41,22 @@ export class ReferenceLines {
       const dst = this.dst;
       const src = this.src;
 
+      const EPS = 1e-6;
+
+      const pushUnique = (points, point) => {
+        for (const existing of points) {
+          const dx = existing.x - point.x;
+          const dy = existing.y - point.y;
+          const dz = existing.z - point.z;
+          if (dx * dx + dy * dy + dz * dz < 1e-8) {
+            return;
+          }
+        }
+        points.push(point);
+      };
+
+      const clip01 = (t) => t >= -EPS && t <= 1 + EPS;
+
       const nP = dst.nrmDir.dotProduct(dst.topLeft);
       const nA = dst.nrmDir.dotProduct(src.topLeft);
       const nB = dst.nrmDir.dotProduct(src.topRight);
@@ -51,32 +67,73 @@ export class ReferenceLines {
 
       if (!areEqual(nB, nA)) {
         const t = (nP - nA) / (nB - nA);
-        if (t > 0 && t <= 1)
-          list.push(src.topLeft.add(src.topRight.sub(src.topLeft).mul(t)));
+        if (clip01(t)) {
+          pushUnique(
+            list,
+            src.topLeft.add(src.topRight.sub(src.topLeft).mul(Math.min(1, Math.max(0, t))))
+          );
+        }
       }
 
       if (!areEqual(nC, nB)) {
         const t = (nP - nB) / (nC - nB);
-        if (t > 0 && t <= 1)
-          list.push(src.topRight.add(src.bottomRight.sub(src.topRight).mul(t)));
+        if (clip01(t)) {
+          pushUnique(
+            list,
+            src.topRight.add(
+              src.bottomRight.sub(src.topRight).mul(Math.min(1, Math.max(0, t)))
+            )
+          );
+        }
       }
 
       if (!areEqual(nD, nC)) {
         const t = (nP - nC) / (nD - nC);
-        if (t > 0 && t <= 1)
-          list.push(
-            src.bottomRight.add(src.bottomLeft.sub(src.bottomRight).mul(t))
+        if (clip01(t)) {
+          pushUnique(
+            list,
+            src.bottomRight.add(
+              src.bottomLeft.sub(src.bottomRight).mul(Math.min(1, Math.max(0, t)))
+            )
           );
+        }
       }
 
       if (!areEqual(nA, nD)) {
         const t = (nP - nD) / (nA - nD);
-        if (t > 0 && t <= 1)
-          list.push(src.bottomLeft.add(src.topLeft.sub(src.bottomLeft).mul(t)));
+        if (clip01(t)) {
+          pushUnique(
+            list,
+            src.bottomLeft.add(
+              src.topLeft.sub(src.bottomLeft).mul(Math.min(1, Math.max(0, t)))
+            )
+          );
+        }
       }
 
-      // the destination plane should have been crossed exactly two times
-      if (list.length !== 2) return null;
+      // The destination plane should cross the source rectangle twice.
+      // Edge/corner hits can produce duplicates or >2 intersections.
+      if (list.length < 2) return null;
+      if (list.length > 2) {
+        // Pick the two points with the largest separation
+        let bestI = 0;
+        let bestJ = 1;
+        let bestDist2 = -1;
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            const dx = list[i].x - list[j].x;
+            const dy = list[i].y - list[j].y;
+            const dz = list[i].z - list[j].z;
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 > bestDist2) {
+              bestDist2 = d2;
+              bestI = i;
+              bestJ = j;
+            }
+          }
+        }
+        list = [list[bestI], list[bestJ]];
+      }
 
       // now back from 3D patient space to 2D pixel space
       const p = {
@@ -119,9 +176,12 @@ export class ReferenceLines {
     try {
       const line = this.buildLine();
 
-      if (!line) return;
+      if (!line) return false;
 
       this.line = line;
+
+      // Clear previous drawing only when we have a valid new line
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
        // Map from image pixel coordinates to canvas coordinates
       const startCanvas = cornerstone.pixelToCanvas(element, {
@@ -141,8 +201,11 @@ export class ReferenceLines {
       ctx.lineTo(endCanvas.x, endCanvas.y);
       ctx.lineWidth = 1.5;
       ctx.stroke();
+
+      return true;
     } catch (error) {
       console.error('Error drawing reference lines:', error);
+      return false;
     }
   }
 }
