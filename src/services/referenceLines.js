@@ -1,7 +1,6 @@
 import * as cornerstone from 'cornerstone-core';
 import DicomGeometry from '../utils/DicomGeometry';
 import Point from '../utils/LinearAlgebra/Point';
-import Line from '../utils/LinearAlgebra/Line';
 import Matrix from '../utils/LinearAlgebra/Matrix';
 import { areEqual } from '../utils/LinearAlgebra/utils';
 
