@@ -84,14 +84,25 @@ export const AuthProvider = ({ children }) => {
     try {
       // Clear IndexedDB - remove all DICOM data for privacy/security
       console.log('Clearing IndexedDB on logout...');
-      await db.files.clear();
-      await db.series.clear();
-      await db.studies.clear();
-      await db.images.clear();
+      
+      // Close the database connection first
+      db.close();
+      
+      // Delete the entire database
+      await db.delete();
+      
+      // Reopen to ensure it's recreated properly
+      await db.open();
+      
       console.log('IndexedDB cleared successfully');
     } catch (error) {
       console.error('Error clearing IndexedDB on logout:', error);
-      // Continue with logout even if DB clear fails
+      // Try to reopen the database even if delete fails
+      try {
+        await db.open();
+      } catch (reopenError) {
+        console.error('Error reopening database:', reopenError);
+      }
     }
     
     // Clear localStorage
