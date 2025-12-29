@@ -3,8 +3,8 @@ import { Box, Slider, Typography, Paper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import * as cornerstone from 'cornerstone-core';
 import * as cornerstoneTools from 'cornerstone-tools';
-import { enableViewportTools } from '../../services/cornerstoneInit';
-import { ReferenceLines } from '../../services/referenceLines';
+import { enableViewportTools } from '../services/cornerstoneInit';
+import { ReferenceLines } from '../services/referenceLines';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -171,6 +171,13 @@ const CornerstoneViewport = forwardRef(({
   // NEW: Track the current drawing request to prevent race conditions
   const drawingRequestRef = useRef(0);
 
+  // Cache loaded source images to avoid async flicker while scrolling
+  const sourceImageCacheRef = useRef(new Map());
+
+  // Refs to avoid stale closures inside Cornerstone DOM event listeners
+  const referenceLinesEnabledRef = useRef(referenceLinesEnabled);
+  const drawAllReferenceLinesRef = useRef(null);
+
   const directionalMarkers = getDirectionalMarkers(orientation);
 
   // Redraw the current image to clear any previously drawn reference lines
@@ -198,28 +205,48 @@ const CornerstoneViewport = forwardRef(({
     const sourceImageId = sourceData.imageIds[sourceData.currentImageIndex || 0];
     if (!sourceImageId) return;
 
-    cornerstone.loadImage(sourceImageId).then((sourceImage) => {
-      // NEW: Check if this drawing request is still valid
-      if (requestId !== drawingRequestRef.current) {
-        // A newer drawing request has been made, ignore this one
-        return;
-      }
-
-      const refLines = referenceLinesRefs.current[sourceOrientation];
-      
-      // Build reference lines from source to this destination
-      const success = refLines.build(sourceImage, currentImageRef.current);
-      
-      if (success) {
-        // Check again before drawing (in case request changed during build)
-        if (requestId === drawingRequestRef.current) {
-          // Draw the reference lines
-          refLines.draw(canvas, element);
+    const syncOverlayCanvasSize = () => {
+      const baseCanvas = element.querySelector('canvas');
+      const overlayCanvas = overlayCanvasRef.current;
+      if (baseCanvas && overlayCanvas) {
+        // Setting width/height clears the canvas; only do it if changed
+        if (overlayCanvas.width !== baseCanvas.width) {
+          overlayCanvas.width = baseCanvas.width;
+        }
+        if (overlayCanvas.height !== baseCanvas.height) {
+          overlayCanvas.height = baseCanvas.height;
         }
       }
-    }).catch(error => {
-      // Silently fail - not all images may have proper metadata
-    });
+    };
+
+    const drawWithSourceImage = (sourceImage) => {
+      if (requestId !== drawingRequestRef.current) return;
+      if (!currentImageRef.current) return;
+
+      const refLines = referenceLinesRefs.current[sourceOrientation];
+      const success = refLines.build(sourceImage, currentImageRef.current);
+      if (!success) return;
+
+      syncOverlayCanvasSize();
+      // draw() clears only if it can compute a valid line
+      refLines.draw(canvas, element);
+    };
+
+    const cached = sourceImageCacheRef.current.get(sourceImageId);
+    if (cached) {
+      drawWithSourceImage(cached);
+      return;
+    }
+
+    cornerstone
+      .loadImage(sourceImageId)
+      .then((sourceImage) => {
+        sourceImageCacheRef.current.set(sourceImageId, sourceImage);
+        drawWithSourceImage(sourceImage);
+      })
+      .catch(() => {
+        // Silently fail - not all images may have proper metadata
+      });
   };
 
   // Draw reference lines only from the active viewport
@@ -230,8 +257,9 @@ const CornerstoneViewport = forwardRef(({
 
     if (!referenceLinesEnabled) return;
 
-    // Clear any existing reference lines before drawing new ones
-    clearReferenceLines();
+    // Note: do NOT clear immediately here. If we clear and then the async
+    // source image load gets cancelled by rapid scrolling, the overlay stays
+    // blank. We clear right before drawing once the new line is ready.
 
     // Only draw reference lines if there's an active viewport
     // and this viewport is NOT the active one
@@ -239,11 +267,13 @@ const CornerstoneViewport = forwardRef(({
     
     if (!activeViewport) {
       // No active viewport selected, don't draw any reference lines
+      clearReferenceLines();
       return;
     }
     
     if (activeViewport === currentOrientation) {
       // This IS the active viewport, don't draw reference lines on itself
+      clearReferenceLines();
       return;
     }
     
@@ -257,6 +287,14 @@ const CornerstoneViewport = forwardRef(({
       drawAllReferenceLines();
     }
   }));
+
+  // Keep refs in sync for stable event listeners
+  useEffect(() => {
+    referenceLinesEnabledRef.current = referenceLinesEnabled;
+  }, [referenceLinesEnabled]);
+
+  // Expose the latest draw function to stable event listeners
+  drawAllReferenceLinesRef.current = drawAllReferenceLines;
 
   const updateViewportData = (element) => {
     try {
@@ -279,12 +317,37 @@ const CornerstoneViewport = forwardRef(({
     const element = e.target;
     updateViewportData(element);
 
+    // Ensure currentImageRef matches the image that was actually displayed
+    try {
+      const displayedImage = cornerstone.getImage(element);
+      if (displayedImage) {
+        currentImageRef.current = displayedImage;
+      }
+    } catch (error) {
+      // Ignore
+    }
+
     // Ensure overlay canvas matches the underlying image canvas size
     const baseCanvas = element.querySelector('canvas');
     const overlayCanvas = overlayCanvasRef.current;
     if (baseCanvas && overlayCanvas) {
-      overlayCanvas.width = baseCanvas.width;
-      overlayCanvas.height = baseCanvas.height;
+      // Only resize when size changed; resizing clears the overlay
+      if (overlayCanvas.width !== baseCanvas.width) {
+        overlayCanvas.width = baseCanvas.width;
+      }
+      if (overlayCanvas.height !== baseCanvas.height) {
+        overlayCanvas.height = baseCanvas.height;
+      }
+    }
+
+    // Redraw reference lines after the image is rendered. Otherwise the overlay
+    // can be cleared by canvas resize and remain blank.
+    if (referenceLinesEnabledRef.current && drawAllReferenceLinesRef.current) {
+      requestAnimationFrame(() => {
+        if (referenceLinesEnabledRef.current && drawAllReferenceLinesRef.current) {
+          drawAllReferenceLinesRef.current();
+        }
+      });
     }
   };
 

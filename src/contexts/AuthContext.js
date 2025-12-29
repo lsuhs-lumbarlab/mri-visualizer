@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
+import db from '../database/db';
 
 const AuthContext = createContext(null);
 
@@ -79,7 +80,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Delete IndexedDB - remove all DICOM data for privacy/security
+      console.log('Deleting IndexedDB on logout...');
+      
+      // Close the database connection first
+      db.close();
+      
+      // Delete the entire database
+      await db.delete();
+      
+      // Reopen to ensure it's recreated properly
+      await db.open();
+      
+      console.log('IndexedDB deleted successfully');
+    } catch (error) {
+      console.error('Error deleting IndexedDB on logout:', error);
+      // Try to reopen the database even if delete fails
+      try {
+        await db.open();
+      } catch (reopenError) {
+        console.error('Error reopening database:', reopenError);
+      }
+    }
+    
     // Clear localStorage
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUser');

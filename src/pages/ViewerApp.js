@@ -1,23 +1,91 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, CircularProgress } from '@material-ui/core';
-import MainLayout from '../components/Layout/MainLayout';
-import Header from '../components/Layout/Header';
-import StudyExplorer from '../components/StudyExplorer/StudyExplorer';
-import CornerstoneViewport from '../components/Viewport/CornerstoneViewport';
+import { 
+  Box, 
+  CircularProgress, 
+  IconButton, 
+  Tooltip 
+} from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import LogoutIcon from '@mui/icons-material/Logout';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import StudyExplorer from '../components/StudyExplorer';
+import CornerstoneViewport from '../components/CornerstoneViewport';
 import { initCornerstone } from '../services/cornerstoneInit';
-import { loadDicomFile, loadSeriesImageStack, isDicomFile } from '../services/dicomLoader';
-import { formatDicomDate, formatDicomTime } from '../utils/dateFormatter';
+import { loadSeriesImageStack } from '../services/dicomLoader';
+import { formatDicomDate, formatDicomTime } from '../utils/dateTimeFormatter';
 import db from '../database/db';
 import { useAuth } from '../contexts/AuthContext';
+import { formatPatientName } from '../utils/patientNameFormatter';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+
+const useStyles = makeStyles((theme) => ({
+  // Layout styles
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    backgroundColor: theme.palette.background.default,
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing(1, 3),
+    backgroundColor: theme.palette.background.paper,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  iconButton: {
+    color: theme.palette.text.primary,
+  },
+  activeButton: {
+    color: theme.palette.primary.main,
+    backgroundColor: theme.palette.action.selected,
+  },
+  content: {
+    display: 'flex',
+    flex: 1,
+    overflow: 'hidden',
+  },
+  sidebar: {
+    width: 230,
+    borderRight: `1px solid ${theme.palette.divider}`,
+    overflow: 'auto',
+    backgroundColor: theme.palette.background.paper,
+    padding: theme.spacing(2),
+  },
+  viewportArea: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'row',
+    padding: theme.spacing(1),
+    gap: theme.spacing(1),
+  },
+}));
 
 function ViewerApp() {
+  const classes = useStyles();
   const { logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { studyId } = useParams(); // Get studyInstanceUID from URL
+
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasFiles, setHasFiles] = useState(false);
+  const [studyLoaded, setStudyLoaded] = useState(false);
   const [viewportKey, setViewportKey] = useState(0);
   const [referenceLinesEnabled, setReferenceLinesEnabled] = useState(false);
   const [activeViewport, setActiveViewport] = useState(null);
+  const [currentStudyUID, setCurrentStudyUID] = useState(null);
   const [patientInfo, setPatientInfo] = useState({
     patientName: '',
     dateOfBirth: '',
@@ -37,6 +105,7 @@ function ViewerApp() {
     coronal: null,
   });
 
+  // Initialize Cornerstone on mount
   useEffect(() => {
     let cancelled = false;
 
@@ -44,10 +113,6 @@ function ViewerApp() {
       // Initialize Cornerstone
       initCornerstone();
 
-      // Clear database on app start (don't persist across refreshes)
-      await clearDatabase();
-
-      // Only render the app after DB is cleared to avoid stale sidebar state
       if (!cancelled) {
         setIsInitialized(true);
       }
@@ -58,99 +123,56 @@ function ViewerApp() {
     };
   }, []);
 
-  const clearDatabase = async () => {
-    try {
-      await db.files.clear();
-      await db.series.clear();
-      await db.studies.clear();
-      await db.images.clear();
-      setHasFiles(false);
-      console.log('Database cleared');
-    } catch (error) {
-      console.error('Error clearing database:', error);
+  // Load study data when component mounts or studyId changes
+  useEffect(() => {
+    if (isInitialized && studyId) {
+      loadStudy(studyId);
     }
-  };
+  }, [isInitialized, studyId]);
 
-  const resetAppState = async () => {
-    // Clear database
-    await clearDatabase();
-    
-    // Reset viewport data
-    setViewportData({
-      sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-      axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-      coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-    });
-    
-    // Reset patient info
-    setPatientInfo({
-      patientName: '',
-      dateOfBirth: '',
-      studyDate: '',
-      studyTime: '',
-    });
-    
-    // Reset reference lines
-    setReferenceLinesEnabled(false);
-    
-    // Reset active viewport
-    setActiveViewport(null);
-    
-    // Increment key to force remount of viewports
-    setViewportKey(prev => prev + 1);
-    
-    console.log('App state reset complete');
-  };
-
-  const handleFilesSelected = async (files) => {
-    setIsLoading(true);
-    
+  const loadStudy = async (studyInstanceUID) => {
     try {
-      // Clear everything first
-      await resetAppState();
+      console.log('Loading study:', studyInstanceUID);
       
-      // Load all DICOM files
-      let loadedCount = 0;
-      for (const file of files) {
-        // Check if file is DICOM by content, not just extension
-        const isDicom = await isDicomFile(file);
-        if (isDicom) {
-          await loadDicomFile(file);
-          loadedCount++;
-        }
-      }
+      // Load study from IndexedDB
+      const study = await db.studies.get(studyInstanceUID);
       
-      if (loadedCount > 0) {
-        setHasFiles(true);
-        
-        // Load patient info from the first study
-        const studies = await db.studies.toArray();
-        if (studies.length > 0) {
-          const study = studies[0];
-          setPatientInfo({
-            patientName: study.patientName || 'Unknown',
-            dateOfBirth: formatDicomDate(study.patientBirthDate),
-            studyDate: formatDicomDate(study.studyDate),
-            studyTime: formatDicomTime(study.studyTime),
-          });
-        }
-        
-        console.log(`Loaded ${loadedCount} DICOM file(s)`);
-      } else {
-        alert('No valid DICOM files found in the selected files.');
+      if (!study) {
+        console.error('Study not found in database:', studyInstanceUID);
+        alert('Study not found. Please upload DICOM files in the Library.');
+        navigate('/library');
+        return;
       }
+
+      console.log('Study loaded:', study);
+
+      // Set current study UID for StudyExplorer
+      setCurrentStudyUID(studyInstanceUID);
+
+      // Load patient info for header display
+      setPatientInfo({
+        patientName: formatPatientName(study.patientName) || 'Unknown Patient',
+        dateOfBirth: formatDicomDate(study.patientBirthDate),
+        studyDate: formatDicomDate(study.studyDate),
+        studyTime: formatDicomTime(study.studyTime),
+      });
+
+      setStudyLoaded(true);
+      console.log('Study loaded successfully');
     } catch (error) {
-      console.error('Error loading files:', error);
-      alert('Error loading DICOM files. Check console for details.');
-    } finally {
-      setIsLoading(false);
+      console.error('Error loading study:', error);
+      alert('Error loading study. Please try again.');
     }
   };
 
   const handleSeriesSelect = async (series) => {
     try {
+      console.log('Loading series:', series);
+      
       const imageIds = await loadSeriesImageStack(series.seriesInstanceUID);
       const orientation = series.orientation.toLowerCase();
+
+      console.log(`Loaded ${imageIds.length} images for ${orientation} orientation`);
 
       setViewportData((prev) => ({
         ...prev,
@@ -208,41 +230,86 @@ function ViewerApp() {
   };
 
   // Handle logout
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  // Handle back to library
+  const handleBackToLibrary = () => {
+    // Pass the patientId back to Library to restore selection
+    if (location.state?.patientId) {
+      navigate('/library', {
+        state: { patientId: location.state.patientId }
+      });
+    } else {
+      navigate('/library');
+    }
   };
 
   if (!isInitialized) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-      >
-        <CircularProgress />
+      <Box className={classes.root}>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+        </Box>
       </Box>
     );
   }
 
   return (
-    <>
-      <MainLayout
-        header={
-          <Header 
-            onOpenFiles={handleFilesSelected}
-            referenceLinesEnabled={referenceLinesEnabled}
-            onToggleReferenceLines={toggleReferenceLines}
-            onLogout={handleLogout}
-          />
-        }
-        sidebar={
-          <StudyExplorer
-            key={hasFiles ? viewportKey : 'empty'}
-            onSeriesSelect={handleSeriesSelect}
-          />
-        }
-        viewports={[
+    <Box className={classes.root}>
+      {/* Header */}
+      <Box className={classes.header}>
+        <Box className={classes.headerLeft}>
+          <Tooltip title="Back to Library">
+            <IconButton 
+              className={classes.iconButton}
+              onClick={handleBackToLibrary}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        <Box className={classes.headerRight}>
+          <Tooltip title="Toggle Reference Lines">
+            <IconButton
+              className={referenceLinesEnabled ? classes.activeButton : classes.iconButton}
+              onClick={toggleReferenceLines}
+            >
+              <GridOnIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Log Out">
+            <IconButton 
+              className={classes.iconButton}
+              onClick={handleLogout}
+            >
+              <LogoutIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      {/* Main Content */}
+      <Box className={classes.content}>
+        {/* Sidebar - Study Explorer */}
+        <Box className={classes.sidebar}>
+          {studyLoaded && currentStudyUID ? (
+            <StudyExplorer 
+              studyInstanceUID={currentStudyUID}
+              onSeriesSelect={handleSeriesSelect} 
+            />
+          ) : (
+            <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+              <CircularProgress size={24} />
+            </Box>
+          )}
+        </Box>
+
+        {/* Viewport Area */}
+        <Box className={classes.viewportArea}>
           <CornerstoneViewport
             key={`sagittal-${viewportKey}`}
             ref={el => viewportRefs.current.sagittal = el}
@@ -260,7 +327,7 @@ function ViewerApp() {
             dateOfBirth={patientInfo.dateOfBirth}
             studyDate={patientInfo.studyDate}
             studyTime={patientInfo.studyTime}
-          />,
+          />
           <CornerstoneViewport
             key={`axial-${viewportKey}`}
             ref={el => viewportRefs.current.axial = el}
@@ -278,7 +345,7 @@ function ViewerApp() {
             dateOfBirth={patientInfo.dateOfBirth}
             studyDate={patientInfo.studyDate}
             studyTime={patientInfo.studyTime}
-          />,
+          />
           <CornerstoneViewport
             key={`coronal-${viewportKey}`}
             ref={el => viewportRefs.current.coronal = el}
@@ -297,25 +364,9 @@ function ViewerApp() {
             studyDate={patientInfo.studyDate}
             studyTime={patientInfo.studyTime}
           />
-        ]}
-      />
-      {isLoading && (
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          bgcolor="rgba(0,0,0,0.7)"
-          zIndex={9999}
-        >
-          <CircularProgress size={60} />
         </Box>
-      )}
-    </>
+      </Box>
+    </Box>
   );
 }
 

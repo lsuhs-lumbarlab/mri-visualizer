@@ -164,6 +164,12 @@ const storeFileData = async (file, metadata, imageId, arrayBuffer) => {
     imageId: imageId,
   });
 
+  // ✅ ADD THIS: Store the DICOM arrayBuffer for persistence
+  await db.images.add({
+    sopInstanceUID: metadata.sopInstanceUID,
+    imageData: arrayBuffer,
+  });
+
   // Store study
   await db.studies.put({
     studyInstanceUID: metadata.studyInstanceUID,
@@ -173,6 +179,7 @@ const storeFileData = async (file, metadata, imageId, arrayBuffer) => {
     studyTime: metadata.studyTime,
     studyDescription: metadata.studyDescription,
     patientBirthDate: metadata.patientBirthDate,
+    patientSex: metadata.patientSex,
   });
 
   // Store series with orientation
@@ -228,23 +235,60 @@ export const loadSeriesImageStack = async (seriesInstanceUID) => {
     .equals(seriesInstanceUID)
     .toArray();
 
-  // Load images and sort by instance number or slice location
+  console.log(`Found ${files.length} files for series ${seriesInstanceUID}`);
+  
   const imagePromises = files.map(async (file) => {
-    const image = await cornerstone.loadImage(file.imageId);
-    return {
-      imageId: file.imageId,
-      image: image,
-    };
+    try {
+      // ✅ FIX: Use .where() instead of .get() since sopInstanceUID is not the primary key
+      const imageRecord = await db.images
+        .where('sopInstanceUID')
+        .equals(file.sopInstanceUID)
+        .first();
+      
+      if (!imageRecord || !imageRecord.imageData) {
+        console.error(`Image data not found for: ${file.sopInstanceUID}`);
+        throw new Error(`Image data not found for ${file.sopInstanceUID}`);
+      }
+
+      // Re-register the arrayBuffer with fileManager
+      const newImageId = cornerstoneWADOImageLoader.wadouri.fileManager.addBuffer(
+        imageRecord.imageData
+      );
+
+      // Load the image using the new imageId
+      const image = await cornerstone.loadImage(newImageId);
+      
+      return {
+        imageId: newImageId,
+        image: image,
+        instanceNumber: parseInt(image.data.string('x00200013') || '0'),
+      };
+    } catch (error) {
+      console.error(`Error loading image ${file.sopInstanceUID}:`, error);
+      throw error;
+    }
   });
 
   const images = await Promise.all(imagePromises);
 
-  // Sort by instance number (stored in image metadata)
-  images.sort((a, b) => {
-    const aInstance = parseInt(a.image.data.string('x00200013') || '0');
-    const bInstance = parseInt(b.image.data.string('x00200013') || '0');
-    return aInstance - bInstance;
-  });
+  // Sort by instance number
+  images.sort((a, b) => a.instanceNumber - b.instanceNumber);
 
   return images.map(img => img.imageId);
+};
+
+/**
+ * Clear all DICOM data from IndexedDB
+ */
+export const clearAllDicomData = async () => {
+  try {
+    await db.files.clear();
+    await db.series.clear();
+    await db.studies.clear();
+    await db.images.clear();
+    console.log('All DICOM data cleared from IndexedDB');
+  } catch (error) {
+    console.error('Error clearing DICOM data:', error);
+    throw error;
+  }
 };

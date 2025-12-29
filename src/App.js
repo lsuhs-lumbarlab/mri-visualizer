@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import SignUpSuccess from './pages/SignUpSuccess';
 import ViewerApp from './pages/ViewerApp';
+import Library from './pages/Library';
 
 // Root redirect component - redirects based on auth state
 function RootRedirect() {
@@ -19,7 +20,7 @@ function RootRedirect() {
   }
   
   return authState.isAuthenticated ? (
-    <Navigate to="/app" replace />
+    <Navigate to="/library" replace />
   ) : (
     <Navigate to="/login" replace />
   );
@@ -40,7 +41,24 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/signup/success" element={<SignUpSuccess />} />
             
-            {/* Protected route - viewer */}
+            {/* Protected routes */}
+            <Route
+              path="/library"
+              element={
+                <ProtectedRoute>
+                  <Library />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/viewer/:studyId"
+              element={
+                <ProtectedRoute>
+                  <ViewerApp />
+                </ProtectedRoute>
+              }
+            />
+            {/* Legacy route for backwards compatibility */}
             <Route
               path="/app"
               element={

@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Paper,
-  TextField,
-  Button,
-  Typography,
   Box,
-  IconButton,
+  Button,
+  TextField,
+  Typography,
+  Paper,
   InputAdornment,
+  IconButton,
   CircularProgress,
 } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import { Visibility, VisibilityOff } from '@material-ui/icons';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,7 +66,7 @@ const useStyles = makeStyles((theme) => ({
 const Login = () => {
   const classes = useStyles();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, authState } = useAuth();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -80,6 +81,13 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (authState.isAuthenticated) {
+      navigate('/library', { replace: true });
+    }
+  }, [authState.isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -128,8 +136,7 @@ const Login = () => {
     setIsLoading(false);
     
     if (result.success) {
-      // Redirect to viewer
-      navigate('/app');
+      navigate('/library');
     } else {
       setApiError(result.error);
     }
@@ -207,7 +214,7 @@ const Login = () => {
                       edge="end"
                       disabled={isLoading}
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -222,28 +229,24 @@ const Login = () => {
               className={classes.submitButton}
               disabled={isLoading}
             >
-              {isLoading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                'Sign In'
-              )}
+              {isLoading ? <CircularProgress size={24} /> : 'Log In'}
             </Button>
-          </form>
 
-          <Box className={classes.signupLink}>
-            <Typography variant="body2" component="span" style={{ color: '#ffffff' }}>
-              Don't have an account?{' '}
-            </Typography>
-            <Button
-              color="primary"
-              className={classes.linkButton}
-              onClick={handleSignupClick}
-              disabled={isLoading}
-            >
-              Sign Up
-            </Button>
-          </Box>
-        </Paper>
+            <Box className={classes.signupLink}>
+              <Typography variant="body2" style={{ color: '#b0b0b0' }}>
+                Don't have an account?{' '}
+                <Button
+                  color="primary"
+                  className={classes.linkButton}
+                  onClick={handleSignupClick}
+                  disabled={isLoading}
+                >
+                  Sign up
+                </Button>
+              </Typography>
+            </Box>
+          </form>
+      </Paper>
     </div>
   );
 };
