@@ -8,12 +8,15 @@ import {
   CardContent,
   IconButton,
   CircularProgress,
+  Tooltip,
 } from '@material-ui/core';
-import { Info as InfoIcon, Share as ShareIcon } from '@material-ui/icons';
+import InfoIcon from '@mui/icons-material/Info';
+import ShareIcon from '@mui/icons-material/Share';
+import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';
-import { formatDicomDate } from '../utils/dateTimeFormatter';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -30,7 +33,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing(2, 3),
+    padding: theme.spacing(1, 3),
     backgroundColor: theme.palette.background.paper,
     borderBottom: `1px solid ${theme.palette.divider}`,
   },
@@ -398,21 +401,21 @@ const Library = () => {
       {/* Header */}
       <Box className={classes.header}>
         <Box className={classes.headerLeft}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleUpload}
-          >
-            UPLOAD
-          </Button>
+          <Tooltip title="Upload DICOM Files">
+            <IconButton
+              onClick={handleUpload}
+            >
+              <DriveFolderUploadIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
-        <Button
-          variant="outlined"
-          color="secondary"
-          onClick={handleLogout}
-        >
-          LOG OUT
-        </Button>
+        <Tooltip title="Logout">
+          <IconButton
+            onClick={handleLogout}
+          >
+            <LogoutIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Main Content - Two Panes */}
@@ -460,18 +463,22 @@ const Library = () => {
                         </Typography>
                       </Box>
                       <Box className={classes.cardActions}>
-                        <IconButton 
-                          size="small"
-                          onClick={(e) => handlePatientInfo(e, patient)}
-                        >
-                          <InfoIcon />
-                        </IconButton>
-                        <IconButton 
-                          size="small"
-                          onClick={(e) => handlePatientShare(e, patient)}
-                        >
-                          <ShareIcon />
-                        </IconButton>
+                        <Tooltip title="Patient Information">  
+                          <IconButton 
+                            size="small"
+                            onClick={(e) => handlePatientInfo(e, patient)}
+                          >
+                            <InfoIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Share Patient">
+                          <IconButton 
+                            size="small"
+                            onClick={(e) => handlePatientShare(e, patient)}
+                          >
+                            <ShareIcon />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     </Box>
                   </CardContent>
@@ -518,18 +525,22 @@ const Library = () => {
                         </Typography>
                       </Box>
                       <Box className={classes.cardActions}>
-                        <IconButton 
-                          size="small"
-                          onClick={(e) => handleStudyInfo(e, study)}
-                        >
-                          <InfoIcon />
-                        </IconButton>
-                        <IconButton 
-                          size="small"
-                          onClick={(e) => handleStudyShare(e, study)}
-                        >
-                          <ShareIcon />
-                        </IconButton>
+                        <Tooltip title="Study Information"> 
+                          <IconButton 
+                            size="small"
+                            onClick={(e) => handleStudyInfo(e, study)}
+                          >
+                            <InfoIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Share Study">
+                          <IconButton 
+                            size="small"
+                            onClick={(e) => handleStudyShare(e, study)}
+                          >
+                            <ShareIcon />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     </Box>
                   </CardContent>

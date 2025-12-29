@@ -7,7 +7,7 @@ import {
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import GridOnIcon from '@mui/icons-material/GridOn';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import LogoutIcon from '@mui/icons-material/Logout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
@@ -286,7 +286,7 @@ function ViewerApp() {
               className={classes.iconButton}
               onClick={handleLogout}
             >
-              <ExitToAppIcon />
+              <LogoutIcon />
             </IconButton>
           </Tooltip>
         </Box>
