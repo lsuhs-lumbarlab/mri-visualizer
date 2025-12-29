@@ -50,7 +50,6 @@ const useStyles = makeStyles((theme) => ({
   },
   activeButton: {
     color: theme.palette.primary.main,
-    backgroundColor: theme.palette.action.selected,
   },
   content: {
     display: 'flex',

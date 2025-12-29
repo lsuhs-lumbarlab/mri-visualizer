@@ -1,4 +1,3 @@
-// DICOM Library Service - Real Implementation (No Mock Data)
 // This service will handle real DICOM uploads and IndexedDB storage
 
 import db from '../database/db';
