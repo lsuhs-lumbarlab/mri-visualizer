@@ -5,7 +5,7 @@ import {
   Typography,
   Box,
 } from '@material-ui/core';
-import { CheckCircle } from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,7 +56,7 @@ const SignUpSuccess = () => {
   return (
     <div className={classes.container}>
       <Paper className={classes.paper} elevation={3}>
-        <CheckCircle className={classes.successIcon} />
+        <CheckCircleIcon className={classes.successIcon} />
         
         <Typography variant="h4" className={classes.title}>
           Account Created!

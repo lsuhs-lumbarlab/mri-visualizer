@@ -6,7 +6,6 @@ import {
   Tooltip 
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-// import FolderOpenIcon from '@mui/icons-material/FolderOpen'; // COMMENTED OUT - no longer need folder picker
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

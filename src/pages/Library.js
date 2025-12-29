@@ -9,12 +9,10 @@ import {
   CircularProgress,
   Tooltip,
 } from '@material-ui/core';
-import { 
-  Info as InfoIcon, 
-  Share as ShareIcon,
-  CreateNewFolder as CreateNewFolderIcon,
-  ExitToApp as ExitToAppIcon,
-} from '@mui/icons-material';
+import InfoIcon from '@mui/icons-material/Info';
+import ShareIcon from '@mui/icons-material/Share';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';

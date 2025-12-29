@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Collapse } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import db from '../database/db';
 import { formatPatientName } from '../utils/patientNameFormatter';
 
@@ -138,7 +139,7 @@ const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
               primaryTypographyProps={{ className: classes.studyPrimary }}
               secondaryTypographyProps={{ className: classes.studySecondary }}
             />
-            {isOpen ? <ExpandLess /> : <ExpandMore />}
+            {isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </ListItem>
           
           <Collapse in={isOpen} timeout="auto" unmountOnExit>

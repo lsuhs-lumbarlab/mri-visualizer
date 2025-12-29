@@ -10,7 +10,8 @@ import {
   CircularProgress,
 } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -213,7 +214,7 @@ const Login = () => {
                       edge="end"
                       disabled={isLoading}
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </InputAdornment>
                 ),
