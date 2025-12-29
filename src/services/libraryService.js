@@ -73,16 +73,18 @@ const libraryService = {
   },
 
   // Upload DICOM files and store in IndexedDB
-  async uploadDicomFolder(files) {
+  async uploadDicomFolder(files, onProgress = null) {
     try {
       console.log(`Starting upload of ${files.length} files`);
       
       let successCount = 0;
       let errorCount = 0;
       const errors = [];
+      const totalFiles = files.length;
       
       // Process each file
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         try {
           // loadDicomFile will parse metadata and store in IndexedDB
           await loadDicomFile(file);
@@ -94,6 +96,12 @@ const libraryService = {
             error: error.message,
           });
           console.error(`Error loading ${file.name}:`, error);
+        }
+        
+        // Call progress callback if provided
+        if (onProgress) {
+          const progress = Math.round(((i + 1) / totalFiles) * 100);
+          onProgress(progress);
         }
       }
       

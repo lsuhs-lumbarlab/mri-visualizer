@@ -281,7 +281,7 @@ function ViewerApp() {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Logout">
+          <Tooltip title="Log Out">
             <IconButton 
               className={classes.iconButton}
               onClick={handleLogout}

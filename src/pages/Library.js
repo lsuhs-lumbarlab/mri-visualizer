@@ -249,19 +249,17 @@ const Library = () => {
       message: '',
     });
 
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setUploadModal(prev => {
-        const newProgress = Math.min(prev.progress + 10, 90);
-        return { ...prev, progress: newProgress };
-      });
-    }, 200);
-
     try {
-      // Call upload service
-      const result = await libraryService.uploadDicomFolder(dicomFiles);
-      
-      clearInterval(progressInterval);
+      // Call upload service with progress callback
+      const result = await libraryService.uploadDicomFolder(
+        dicomFiles,
+        (progress) => {
+          setUploadModal(prev => ({
+            ...prev,
+            progress: progress,
+          }));
+        }
+      );
 
       if (result.success) {
         // Set to 100% and show success
@@ -286,7 +284,6 @@ const Library = () => {
           }, 1500);
         }, 1000);
       } else {
-        clearInterval(progressInterval);
         setUploadModal({
           open: true,
           progress: 0,
@@ -305,7 +302,6 @@ const Library = () => {
         }, 3000);
       }
     } catch (error) {
-      clearInterval(progressInterval);
       console.error('Upload error:', error);
       setUploadModal({
         open: true,
@@ -409,7 +405,7 @@ const Library = () => {
             </IconButton>
           </Tooltip>
         </Box>
-        <Tooltip title="Logout">
+        <Tooltip title="Log Out">
           <IconButton
             onClick={handleLogout}
           >
