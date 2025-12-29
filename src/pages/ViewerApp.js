@@ -17,6 +17,7 @@ import { loadSeriesImageStack } from '../services/dicomLoader';
 import { formatDicomDate, formatDicomTime } from '../utils/dateFormatter';
 import db from '../database/db';
 import { useAuth } from '../contexts/AuthContext';
+import { parsePatientName } from '../utils/patientNameFormatter';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 const useStyles = makeStyles((theme) => ({
@@ -151,7 +152,7 @@ function ViewerApp() {
 
       // Load patient info for header display
       setPatientInfo({
-        patientName: study.patientName || 'Unknown Patient',
+        patientName: parsePatientName(study.patientName) || 'Unknown Patient',
         dateOfBirth: formatDicomDate(study.patientBirthDate),
         studyDate: formatDicomDate(study.studyDate),
         studyTime: formatDicomTime(study.studyTime),

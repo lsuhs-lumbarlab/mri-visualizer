@@ -3,6 +3,7 @@ import { Box, Typography, List, ListItem, ListItemText, Collapse } from '@materi
 import { makeStyles } from '@material-ui/core/styles';
 import { ExpandLess, ExpandMore } from '@material-ui/icons';
 import db from '../database/db';
+import { parsePatientName } from '../utils/patientNameFormatter';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -46,30 +47,6 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.8rem',
   },
 }));
-
-// Helper function to parse DICOM patient name (same as in libraryService.js)
-// DICOM format: LastName^FirstName^MiddleName^Prefix^Suffix
-const parsePatientName = (dicomName) => {
-  if (!dicomName) return 'Unknown Patient';
-  
-  // Remove any leading/trailing whitespace
-  const cleaned = dicomName.trim();
-  
-  // Split by ^ delimiter
-  const parts = cleaned.split('^').map(part => part.trim()).filter(part => part.length > 0);
-  
-  if (parts.length === 0) return 'Unknown Patient';
-  
-  // Format: "LastName, FirstName MiddleName"
-  if (parts.length === 1) {
-    return parts[0]; // Just last name
-  } else {
-    // LastName, FirstName MiddleName ...
-    const [lastName, firstName, ...rest] = parts;
-    const restNames = rest.length > 0 ? ` ${rest.join(' ')}` : '';
-    return `${lastName}, ${firstName}${restNames}`;
-  }
-};
 
 const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
   const classes = useStyles();
