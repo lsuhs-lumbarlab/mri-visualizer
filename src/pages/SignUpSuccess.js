@@ -5,7 +5,7 @@ import {
   Typography,
   Box,
 } from '@material-ui/core';
-import { CheckCircle } from '@material-ui/icons';
+import { CheckCircle } from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 

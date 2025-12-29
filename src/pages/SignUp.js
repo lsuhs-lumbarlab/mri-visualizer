@@ -11,7 +11,7 @@ import {
   MenuItem,
 } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import { Visibility, VisibilityOff, ArrowBack } from '@material-ui/icons';
+import { Visibility, VisibilityOff, ArrowBack } from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';

@@ -6,10 +6,10 @@ import {
   Tooltip 
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-// import FolderOpenIcon from '@material-ui/icons/FolderOpen'; // COMMENTED OUT - no longer need folder picker
-import GridOnIcon from '@material-ui/icons/GridOn';
-import ExitToAppIcon from '@material-ui/icons/ExitToApp';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
+// import FolderOpenIcon from '@mui/icons-material/FolderOpen'; // COMMENTED OUT - no longer need folder picker
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
 import { initCornerstone } from '../services/cornerstoneInit';
