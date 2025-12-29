@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   CircularProgress, 
@@ -6,9 +6,12 @@ import {
   Tooltip 
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import GridOnIcon from '@mui/icons-material/GridOn';
-import LogoutIcon from '@mui/icons-material/Logout';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { 
+  GridOn as GridOnIcon, 
+  Logout as LogoutIcon, 
+  ArrowBack as ArrowBackIcon 
+} from '@mui/icons-material';
+import SvgIcon from '@mui/material/SvgIcon';
 import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
 import { initCornerstone } from '../services/cornerstoneInit';
@@ -18,6 +21,24 @@ import db from '../database/db';
 import { useAuth } from '../contexts/AuthContext';
 import { formatPatientName } from '../utils/patientNameFormatter';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
+
+// Custom COR icon component
+const CorIcon = (props) => (
+  <SvgIcon {...props} viewBox="0 0 24 24">
+    <rect x="2" y="2" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" rx="2"/>
+    <text 
+      x="12" 
+      y="15" 
+      textAnchor="middle" 
+      fill="currentColor" 
+      fontSize="8" 
+      fontWeight="bold"
+      fontFamily="Roboto, sans-serif"
+    >
+      COR
+    </text>
+  </SvgIcon>
+);
 
 const useStyles = makeStyles((theme) => ({
   // Layout styles
@@ -96,6 +117,7 @@ function ViewerApp() {
     axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
     coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
   });
+  const [coronalVisible, setCoronalVisible] = useState(true); // Add this state
 
   // Store references to viewport components
   const viewportRefs = useRef({
@@ -218,6 +240,11 @@ function ViewerApp() {
     setReferenceLinesEnabled(prev => !prev);
   };
 
+  // Toggle coronal viewport visibility
+  const toggleCoronalViewport = () => {
+    setCoronalVisible(prev => !prev);
+  };
+
   // Handle viewport click to set active viewport
   const handleViewportClick = (orientation) => {
     setActiveViewport(orientation);
@@ -277,6 +304,15 @@ function ViewerApp() {
               onClick={toggleReferenceLines}
             >
               <GridOnIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Toggle Coronal View">
+            <IconButton
+              className={coronalVisible ? classes.activeButton : classes.iconButton}
+              onClick={toggleCoronalViewport}
+            >
+              <CorIcon />
             </IconButton>
           </Tooltip>
 
@@ -345,24 +381,26 @@ function ViewerApp() {
             studyDate={patientInfo.studyDate}
             studyTime={patientInfo.studyTime}
           />
-          <CornerstoneViewport
-            key={`coronal-${viewportKey}`}
-            ref={el => viewportRefs.current.coronal = el}
-            imageIds={viewportData.coronal.imageIds}
-            orientation="CORONAL"
-            seriesDescription={viewportData.coronal.seriesDescription}
-            currentImageIndex={viewportData.coronal.currentImageIndex}
-            referenceLinesEnabled={referenceLinesEnabled}
-            viewportData={viewportData}
-            onImageIndexChange={(index) => handleViewportImageChange('coronal', index)}
-            isActive={activeViewport === 'coronal'}
-            onViewportClick={() => handleViewportClick('coronal')}
-            activeViewport={activeViewport}
-            patientName={patientInfo.patientName}
-            dateOfBirth={patientInfo.dateOfBirth}
-            studyDate={patientInfo.studyDate}
-            studyTime={patientInfo.studyTime}
-          />
+          {coronalVisible && (  // Conditionally render coronal viewport
+            <CornerstoneViewport
+              key={`coronal-${viewportKey}`}
+              ref={el => viewportRefs.current.coronal = el}
+              imageIds={viewportData.coronal.imageIds}
+              orientation="CORONAL"
+              seriesDescription={viewportData.coronal.seriesDescription}
+              currentImageIndex={viewportData.coronal.currentImageIndex}
+              referenceLinesEnabled={referenceLinesEnabled}
+              viewportData={viewportData}
+              onImageIndexChange={(index) => handleViewportImageChange('coronal', index)}
+              isActive={activeViewport === 'coronal'}
+              onViewportClick={() => handleViewportClick('coronal')}
+              activeViewport={activeViewport}
+              patientName={patientInfo.patientName}
+              dateOfBirth={patientInfo.dateOfBirth}
+              studyDate={patientInfo.studyDate}
+              studyTime={patientInfo.studyTime}
+            />
+          )}
         </Box>
       </Box>
     </Box>

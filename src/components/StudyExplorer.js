@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Collapse } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { 
+  ExpandLess as ExpandLessIcon, 
+  ExpandMore as ExpandMoreIcon 
+} from '@mui/icons-material';
 import db from '../database/db';
 import { formatPatientName } from '../utils/patientNameFormatter';
 

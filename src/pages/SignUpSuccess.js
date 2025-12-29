@@ -1,11 +1,9 @@
-import React from 'react';
 import {
   Paper,
   Button,
   Typography,
-  Box,
 } from '@material-ui/core';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 
