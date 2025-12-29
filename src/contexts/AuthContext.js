@@ -82,8 +82,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Clear IndexedDB - remove all DICOM data for privacy/security
-      console.log('Clearing IndexedDB on logout...');
+      // Delete IndexedDB - remove all DICOM data for privacy/security
+      console.log('Deleting IndexedDB on logout...');
       
       // Close the database connection first
       db.close();
@@ -94,9 +94,9 @@ export const AuthProvider = ({ children }) => {
       // Reopen to ensure it's recreated properly
       await db.open();
       
-      console.log('IndexedDB cleared successfully');
+      console.log('IndexedDB deleted successfully');
     } catch (error) {
-      console.error('Error clearing IndexedDB on logout:', error);
+      console.error('Error deleting IndexedDB on logout:', error);
       // Try to reopen the database even if delete fails
       try {
         await db.open();
