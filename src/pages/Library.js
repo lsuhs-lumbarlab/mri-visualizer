@@ -2,18 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import { 
   Box, 
+  Button, 
   Typography, 
   Card, 
   CardContent,
   IconButton,
   CircularProgress,
-  Tooltip,
 } from '@material-ui/core';
-import InfoIcon from '@mui/icons-material/Info';
-import ShareIcon from '@mui/icons-material/Share';
-import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
+import { Info as InfoIcon, Share as ShareIcon } from '@material-ui/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';
@@ -40,16 +36,7 @@ const useStyles = makeStyles((theme) => ({
   },
   headerLeft: {
     display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1),
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1),
-  },
-  iconButton: {
-    color: theme.palette.text.primary,
+    gap: theme.spacing(2),
   },
   content: {
     display: 'flex',
@@ -256,49 +243,81 @@ const Library = () => {
       open: true,
       progress: 0,
       status: 'uploading',
-      message: `Uploading ${dicomFiles.length} DICOM files...`,
+      message: '',
     });
 
-    try {
-      // Upload files to backend
-      const response = await libraryService.uploadDicomFiles(
-        dicomFiles,
-        (progress) => {
-          setUploadModal(prev => ({
-            ...prev,
-            progress: progress,
-          }));
-        }
-      );
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setUploadModal(prev => {
+        const newProgress = Math.min(prev.progress + 10, 90);
+        return { ...prev, progress: newProgress };
+      });
+    }, 200);
 
-      if (response.success) {
+    try {
+      // Call upload service
+      const result = await libraryService.uploadDicomFolder(dicomFiles);
+      
+      clearInterval(progressInterval);
+
+      if (result.success) {
+        // Set to 100% and show success
         setUploadModal({
           open: true,
           progress: 100,
           status: 'success',
-          message: 'Files uploaded successfully!',
+          message: `Successfully uploaded ${dicomFiles.length} DICOM file(s)!`,
         });
 
-        // Reload patients after successful upload
+        // Refresh patient list after short delay
         setTimeout(async () => {
           await loadPatients();
-          setUploadModal({ open: false, progress: 0, status: 'uploading', message: '' });
-        }, 2000);
+          // Close modal
+          setTimeout(() => {
+            setUploadModal({
+              open: false,
+              progress: 0,
+              status: 'uploading',
+              message: '',
+            });
+          }, 1500);
+        }, 1000);
       } else {
-        throw new Error(response.error || 'Upload failed');
+        clearInterval(progressInterval);
+        setUploadModal({
+          open: true,
+          progress: 0,
+          status: 'error',
+          message: result.message || 'Upload failed. Please try again.',
+        });
+
+        // Close error modal after delay
+        setTimeout(() => {
+          setUploadModal({
+            open: false,
+            progress: 0,
+            status: 'uploading',
+            message: '',
+          });
+        }, 3000);
       }
     } catch (error) {
-      console.error('Error uploading files:', error);
+      clearInterval(progressInterval);
+      console.error('Upload error:', error);
       setUploadModal({
         open: true,
         progress: 0,
         status: 'error',
-        message: error.message || 'Upload failed. Please try again.',
+        message: 'An error occurred during upload. Please try again.',
       });
 
-      // Auto-close error modal after 3 seconds
       setTimeout(() => {
-        setUploadModal({ open: false, progress: 0, status: 'uploading', message: '' });
+        setUploadModal({
+          open: false,
+          progress: 0,
+          status: 'uploading',
+          message: '',
+        });
       }, 3000);
     }
   };
@@ -307,51 +326,43 @@ const Library = () => {
     setSelectedPatient(patient);
   };
 
-  const handleStudyClick = (study) => {
-    // Navigate to viewer with studyInstanceUID and pass patientId for back navigation
-    navigate(`/viewer/${study.metadata.studyInstanceUID}`, {
-      state: { patientId: selectedPatient?.id }
-    });
-  };
-
   const handlePatientInfo = (e, patient) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent card selection
     setPatientInfoModal({ open: true, patient });
   };
 
-  const handleStudyInfo = (e, study) => {
-    e.stopPropagation();
-    setStudyInfoModal({ open: true, study });
-  };
-
   const handlePatientShare = (e, patient) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent card selection
     setShareModal({ open: true, type: 'patient', item: patient });
   };
 
+  const handleStudyClick = (study) => {
+    // Navigate to viewer with studyId AND patientId in state
+    navigate(`/viewer/${study.id}`, {
+      state: { patientId: selectedPatient.id }
+    });
+  };
+
+  const handleStudyInfo = (e, study) => {
+    e.stopPropagation(); // Prevent card click
+    setStudyInfoModal({ open: true, study });
+  };
+
   const handleStudyShare = (e, study) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent card click
     setShareModal({ open: true, type: 'study', item: study });
   };
 
-  const handleShare = async (shareData) => {
-    try {
-      const response = await libraryService.createShareLink({
-        itemType: shareModal.type,
-        itemId: shareModal.item.id,
-        ...shareData,
-      });
-
-      if (response.success) {
-        alert(`Share link created: ${response.data.shareUrl}`);
-        setShareModal({ open: false, type: null, item: null });
-      } else {
-        throw new Error(response.error || 'Failed to create share link');
-      }
-    } catch (error) {
-      console.error('Error creating share link:', error);
-      alert('Failed to create share link. Please try again.');
+  const handleShare = async (email) => {
+    const { type, item } = shareModal;
+    
+    if (type === 'patient') {
+      return await libraryService.sharePatient(item.id, email);
+    } else if (type === 'study') {
+      return await libraryService.shareStudy(item.id, email);
     }
+    
+    return { success: false, message: 'Invalid share type' };
   };
 
   // Prepare patient info data for modal
@@ -387,27 +398,21 @@ const Library = () => {
       {/* Header */}
       <Box className={classes.header}>
         <Box className={classes.headerLeft}>
-          <Tooltip title="Upload DICOM Files">
-            <IconButton
-              className={classes.iconButton}
-              onClick={handleUpload}
-            >
-              {/* <CreateNewFolderIcon /> */}
-              <DriveFolderUploadIcon />
-            </IconButton>
-          </Tooltip>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleUpload}
+          >
+            UPLOAD
+          </Button>
         </Box>
-        
-        <Box className={classes.headerRight}>
-          <Tooltip title="Logout">
-            <IconButton
-              className={classes.iconButton}
-              onClick={handleLogout}
-            >
-              <ExitToAppIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={handleLogout}
+        >
+          LOG OUT
+        </Button>
       </Box>
 
       {/* Main Content - Two Panes */}
@@ -425,7 +430,7 @@ const Library = () => {
           ) : patients.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="h6" className={classes.emptyStateText}>
-                No DICOM studies available yet. Click the upload icon to add your first study.
+                No DICOM studies available yet. Click 'Upload' to add your first study.
               </Typography>
             </Box>
           ) : (
