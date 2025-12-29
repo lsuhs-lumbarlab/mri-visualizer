@@ -1,6 +1,6 @@
 // Helper function to parse DICOM patient name
 // DICOM format: LastName^FirstName^MiddleName^Prefix^Suffix
-export function parsePatientName(dicomName) {
+export function formatPatientName(dicomName) {
   if (!dicomName) return 'Unknown Patient';
   
   // Remove any leading/trailing whitespace

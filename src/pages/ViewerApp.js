@@ -14,10 +14,10 @@ import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
 import { initCornerstone } from '../services/cornerstoneInit';
 import { loadSeriesImageStack } from '../services/dicomLoader';
-import { formatDicomDate, formatDicomTime } from '../utils/dateFormatter';
+import { formatDicomDate, formatDicomTime } from '../utils/dateTimeFormatter';
 import db from '../database/db';
 import { useAuth } from '../contexts/AuthContext';
-import { parsePatientName } from '../utils/patientNameFormatter';
+import { formatPatientName } from '../utils/patientNameFormatter';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 const useStyles = makeStyles((theme) => ({
@@ -152,7 +152,7 @@ function ViewerApp() {
 
       // Load patient info for header display
       setPatientInfo({
-        patientName: parsePatientName(study.patientName) || 'Unknown Patient',
+        patientName: formatPatientName(study.patientName) || 'Unknown Patient',
         dateOfBirth: formatDicomDate(study.patientBirthDate),
         studyDate: formatDicomDate(study.studyDate),
         studyTime: formatDicomTime(study.studyTime),

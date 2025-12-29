@@ -3,7 +3,7 @@ import { Box, Typography, List, ListItem, ListItemText, Collapse } from '@materi
 import { makeStyles } from '@material-ui/core/styles';
 import { ExpandLess, ExpandMore } from '@material-ui/icons';
 import db from '../database/db';
-import { parsePatientName } from '../utils/patientNameFormatter';
+import { formatPatientName } from '../utils/patientNameFormatter';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -131,7 +131,7 @@ const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
             className={classes.studyItem}
           >
             <ListItemText
-              primary={parsePatientName(study.patientName)}
+              primary={formatPatientName(study.patientName)}
               secondary={`${study.studyDate || 'No date'} - ${
                 study.studyDescription || 'No description'
               }`}

@@ -3,7 +3,8 @@
 
 import db from '../database/db';
 import { loadDicomFile } from './dicomLoader';
-import { parsePatientName } from '../utils/patientNameFormatter';
+import { formatPatientName } from '../utils/patientNameFormatter';
+import { formatDicomDate, calculateAge } from '../utils/dateTimeFormatter';
 
 const libraryService = {
   // Get all patients from IndexedDB
@@ -22,8 +23,8 @@ const libraryService = {
           // Create patient entry with properly formatted data
           patientMap.set(patientId, {
             id: patientId,
-            name: parsePatientName(study.patientName), // Parse name properly
-            dob: formatBirthDate(study.patientBirthDate), // Format birth date
+            name: formatPatientName(study.patientName), // Parse name properly
+            dob: formatDicomDate(study.patientBirthDate), // Format birth date
             phiSummary: {
               patientId: patientId,
               sex: formatSex(study.patientSex), // Format sex/gender
@@ -44,7 +45,7 @@ const libraryService = {
         patient.studies.push({
           id: study.studyInstanceUID,
           description: study.studyDescription || 'No Description',
-          date: formatStudyDate(study.studyDate),
+          date: formatDicomDate(study.studyDate),
           modality: 'MR', // Default to MR for now
           metadata: {
             studyInstanceUID: study.studyInstanceUID,
@@ -159,77 +160,6 @@ function formatSex(dicomSex) {
   };
   
   return sexMap[dicomSex.toUpperCase()] || 'Unknown';
-}
-
-// Helper function to calculate age from birth date
-function calculateAge(birthDate) {
-  if (!birthDate || birthDate.length < 8) return null;
-  
-  try {
-    // DICOM date format is YYYYMMDD
-    const year = parseInt(birthDate.substring(0, 4));
-    const month = parseInt(birthDate.substring(4, 6));
-    const day = parseInt(birthDate.substring(6, 8));
-    
-    // Validate numbers
-    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
-    
-    const birth = new Date(year, month - 1, day);
-    
-    // Check if valid date
-    if (isNaN(birth.getTime())) return null;
-    
-    const today = new Date();
-    
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    
-    // Return null if age is invalid (negative or > 150)
-    if (age < 0 || age > 150) return null;
-    
-    return age;
-  } catch (error) {
-    return null;
-  }
-}
-
-// Helper function to format study date for display
-function formatStudyDate(studyDate) {
-  if (!studyDate || studyDate.length < 8) return 'Unknown Date';
-  
-  try {
-    // DICOM date format is YYYYMMDD
-    const year = studyDate.substring(0, 4);
-    const month = studyDate.substring(4, 6);
-    const day = studyDate.substring(6, 8);
-    
-    // Validate
-    const yearNum = parseInt(year);
-    const monthNum = parseInt(month);
-    const dayNum = parseInt(day);
-    
-    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
-      return 'Unknown Date';
-    }
-    
-    if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) {
-      return 'Unknown Date';
-    }
-    
-    return `${year}-${month}-${day}`;
-  } catch (error) {
-    return 'Unknown Date';
-  }
-}
-
-// Helper function to format birth date for display  
-function formatBirthDate(birthDate) {
-  const formatted = formatStudyDate(birthDate);
-  return formatted === 'Unknown Date' ? 'Unknown' : formatted;
 }
 
 export default libraryService;

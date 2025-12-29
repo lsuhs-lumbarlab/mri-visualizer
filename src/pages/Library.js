@@ -13,6 +13,7 @@ import { Info as InfoIcon, Share as ShareIcon } from '@material-ui/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';
+import { formatDicomDate } from '../utils/dateTimeFormatter';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -364,36 +365,12 @@ const Library = () => {
     return { success: false, message: 'Invalid share type' };
   };
 
-  const formatDate = (dateString) => {
-    // Handle already formatted or invalid dates
-    if (!dateString || dateString === 'Unknown' || dateString === 'Unknown Date') {
-      return 'Unknown';
-    }
-    
-    try {
-      const date = new Date(dateString);
-      
-      // Check if valid date
-      if (isNaN(date.getTime())) {
-        return 'Unknown';
-      }
-      
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    } catch (error) {
-      return 'Unknown';
-    }
-  };
-
   // Prepare patient info data for modal
   const getPatientInfoData = (patient) => {
     if (!patient) return {};
     return {
       'Name': patient.name,
-      'Date of Birth': formatDate(patient.dob),
+      'Date of Birth': patient.dob,
       'Patient ID': patient.phiSummary.patientId,
       'Sex': patient.phiSummary.sex,
       'Age': patient.phiSummary.age ? patient.phiSummary.age : 'N/A',
@@ -408,7 +385,7 @@ const Library = () => {
     if (!study) return {};
     return {
       'Description': study.description,
-      'Study Date': formatDate(study.date),
+      'Study Date': study.date,
       'Modality': study.modality,
       'Accession Number': study.metadata.accessionNumber,
       'Study Instance UID': study.metadata.studyInstanceUID,
@@ -473,7 +450,7 @@ const Library = () => {
                           {patient.name}
                         </Typography>
                         <Typography className={classes.phiInfo}>
-                          DOB: {formatDate(patient.dob)}
+                          DOB: {patient.dob}
                         </Typography>
                         <Typography className={classes.phiInfo}>
                           MRN: {patient.phiSummary.patientId}
@@ -531,7 +508,7 @@ const Library = () => {
                           {study.description}
                         </Typography>
                         <Typography className={classes.studyInfo}>
-                          Study Date: {formatDate(study.date)}
+                          Study Date: {study.date}
                         </Typography>
                         <Typography className={classes.studyInfo}>
                           Modality: {study.modality}
