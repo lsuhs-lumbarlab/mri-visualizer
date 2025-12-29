@@ -273,15 +273,13 @@ const Library = () => {
         // Refresh patient list after short delay
         setTimeout(async () => {
           await loadPatients();
-          // Close modal
-          setTimeout(() => {
-            setUploadModal({
-              open: false,
-              progress: 0,
-              status: 'uploading',
-              message: '',
-            });
-          }, 1500);
+          // Close modal immediately without showing uploading state
+          setUploadModal({
+            open: false,
+            progress: 0,
+            status: 'success',
+            message: '',
+          });
         }, 1000);
       } else {
         setUploadModal({
