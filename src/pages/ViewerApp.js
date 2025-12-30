@@ -27,8 +27,7 @@ import {
   mdiTools,
   mdiRuler,
   mdiAngleAcute,
-  mdiCursorDefault,
-  mdiAxisZRotateClockwise
+  mdiCursorDefault
 } from '@mdi/js';
 
 import { 
@@ -55,6 +54,39 @@ const CorIcon = (props) => (
     >
       COR
     </text>
+  </SvgIcon>
+);
+
+// Custom Cobb Angle icon (4 lines: two endplate lines + two perpendiculars)
+const CobbAngleIcon = (props) => (
+  <SvgIcon {...props} viewBox="0 0 24 24">
+    {/* 4 lines */}
+    <path
+      d="M3 9 L21 4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <path
+      d="M3 15 L21 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <path
+      d="M14 6 L16 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M14 18 L16 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
   </SvgIcon>
 );
 
@@ -654,7 +686,7 @@ function ViewerApp() {
                 className={activeTool === 'cobb-angle' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('cobb-angle')}
               >
-                <Icon path={mdiAxisZRotateClockwise} size={1} />
+                <CobbAngleIcon />
               </IconButton>
             </Tooltip>
 
