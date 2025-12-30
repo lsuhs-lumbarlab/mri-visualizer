@@ -477,6 +477,7 @@ const CornerstoneViewport = forwardRef(({
         }
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageIds]);
 
   // Redraw reference lines when enabled/disabled, viewport data changes, OR activeViewport changes
@@ -486,7 +487,8 @@ const CornerstoneViewport = forwardRef(({
     } else {
       clearReferenceLines();
     }
-  }, [referenceLinesEnabled, viewportData, activeViewport]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceLinesEnabled, viewportData, activeViewport, imageIds.length]);
 
   const handleSliceChange = (event, newValue) => {
     const element = viewportRef.current;

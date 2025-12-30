@@ -186,6 +186,7 @@ function ViewerApp() {
     if (isInitialized && studyId) {
       loadStudy(studyId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialized, studyId]);
 
   const loadStudy = async (studyInstanceUID) => {
@@ -308,7 +309,7 @@ function ViewerApp() {
         updateReferenceLines(activeViewport);
       }
     });
-  }, [coronalVisible]);
+  }, [coronalVisible, referenceLinesEnabled, activeViewport]);
 
   // Handle viewport click to set active viewport
   const handleViewportClick = (orientation) => {
