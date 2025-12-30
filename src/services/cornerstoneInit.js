@@ -48,7 +48,14 @@ export const enableViewportTools = (element) => {
   // Add tools to this specific element (makes them available but not active)
   cornerstoneTools.addToolForElement(element, cornerstoneTools.StackScrollMouseWheelTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.PanTool);
-  cornerstoneTools.addToolForElement(element, cornerstoneTools.ZoomTool);
+  cornerstoneTools.addToolForElement(element, cornerstoneTools.ZoomTool, {
+    configuration: {
+      invert: true,
+      preventZoomOutsideImage: false,
+      minScale: .1,
+      maxScale: 20.0,
+    }
+  });
   cornerstoneTools.addToolForElement(element, cornerstoneTools.WwwcTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.LengthTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.AngleTool);
