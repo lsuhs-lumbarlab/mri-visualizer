@@ -189,6 +189,40 @@ function ViewerApp() {
     };
   }, []);
 
+  // Keyboard shortcuts for tool selection
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      // Ignore if user is typing in an input field
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Map keys to tools
+      const keyMap = {
+        'escape': 'no-tool',    // ESC to deactivate
+        'z': 'zoom',            // Z for zoom
+        'p': 'pan',             // P for pan
+        'w': 'wl/ww',           // W for window level/width
+        'd': 'distance',        // D for distance
+        'a': 'angle',           // A for angle
+        'c': 'cobb-angle',      // C for cobb angle
+        't': 'text',            // T for text
+      };
+
+      const toolName = keyMap[event.key.toLowerCase()];
+      if (toolName) {
+        event.preventDefault();
+        handleToolSelect(toolName);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [activeTool]); // Include activeTool in deps to ensure latest handleToolSelect is used
+
   // Load study data when component mounts or studyId changes
   useEffect(() => {
     if (isInitialized && studyId) {
@@ -561,7 +595,7 @@ function ViewerApp() {
       >
         <Paper className={classes.toolsPanel}>
           <Box className={classes.toolsGrid}>
-            <Tooltip title="No Tool">
+            <Tooltip title="No Tool (ESC)">
               <IconButton
                 className={activeTool === 'no-tool' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('no-tool')}
@@ -570,7 +604,7 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
             
-            <Tooltip title="Pan">
+            <Tooltip title="Pan (P)">
               <IconButton
                 className={activeTool === 'pan' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('pan')}
@@ -579,7 +613,7 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Zoom">
+            <Tooltip title="Zoom (Z)">
               <IconButton
                 className={activeTool === 'zoom' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('zoom')}
@@ -588,7 +622,7 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="WL/WW">
+            <Tooltip title="WL/WW (W)">
               <IconButton
                 className={activeTool === 'wl/ww' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('wl/ww')}
@@ -597,7 +631,7 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Distance">
+            <Tooltip title="Distance (D)">
               <IconButton
                 className={activeTool === 'distance' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('distance')}
@@ -606,7 +640,7 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Angle">
+            <Tooltip title="Angle (A)">
               <IconButton
                 className={activeTool === 'angle' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('angle')}
@@ -615,7 +649,7 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Cobb Angle">
+            <Tooltip title="Cobb Angle (C)">
               <IconButton
                 className={activeTool === 'cobb-angle' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('cobb-angle')}
@@ -624,7 +658,7 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Text">
+            <Tooltip title="Text (T)">
               <IconButton
                 className={activeTool === 'text' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('text')}
