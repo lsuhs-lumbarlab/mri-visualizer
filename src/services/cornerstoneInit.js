@@ -40,28 +40,23 @@ export const initCornerstone = () => {
     showSVGCursors: false,
   });
 
-  // Add common tools
-  // cornerstoneTools.addTool(cornerstoneTools.PanTool);
-  // cornerstoneTools.addTool(cornerstoneTools.ZoomTool);
-  // cornerstoneTools.addTool(cornerstoneTools.WwwcTool);
-  // cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
-
   isInitialized = true;
   console.log('Cornerstone initialized successfully');
 };
 
 export const enableViewportTools = (element) => {
-  // Add tools to this specific element
+  // Add tools to this specific element (makes them available but not active)
+  cornerstoneTools.addToolForElement(element, cornerstoneTools.StackScrollMouseWheelTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.PanTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.ZoomTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.WwwcTool);
-  cornerstoneTools.addToolForElement(element, cornerstoneTools.StackScrollMouseWheelTool);
+  cornerstoneTools.addToolForElement(element, cornerstoneTools.LengthTool);
+  cornerstoneTools.addToolForElement(element, cornerstoneTools.AngleTool);
+  cornerstoneTools.addToolForElement(element, cornerstoneTools.ArrowAnnotateTool);
+  cornerstoneTools.addToolForElement(element, cornerstoneTools.CobbAngleTool);
   
-  // Activate tools with mouse button bindings
-  cornerstoneTools.setToolActiveForElement(element, 'Zoom', { mouseButtonMask: 1 }); // Left click
-  cornerstoneTools.setToolActiveForElement(element, 'Wwwc', { mouseButtonMask: 2 }); // Right click
-  cornerstoneTools.setToolActiveForElement(element, 'Pan', { mouseButtonMask: 4 }); // Middle click
-  cornerstoneTools.setToolActiveForElement(element, 'StackScrollMouseWheel', {}); // Mouse wheel
+  // By default, only mouse wheel scrolling is active
+  cornerstoneTools.setToolActiveForElement(element, 'StackScrollMouseWheel', {});
   
-  console.log('Viewport tools enabled for element:', element);
+  console.log('Viewport tools enabled for element (scroll only by default):', element);
 };

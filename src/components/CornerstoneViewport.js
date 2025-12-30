@@ -309,10 +309,13 @@ const CornerstoneViewport = forwardRef(({
       try {
         // Only resize if cornerstone has enabled the element
         cornerstone.getEnabledElement(element);
-        cornerstone.resize(element, true);
+        cornerstone.resize(element, false); // false = preserve zoom/pan state
       } catch (error) {
         // Ignore - element may not be enabled yet
       }
+    },
+    getElement: () => {
+      return viewportRef.current;
     }
   }));
 
@@ -417,7 +420,7 @@ const CornerstoneViewport = forwardRef(({
         requestAnimationFrame(() => {
           try {
             cornerstone.getEnabledElement(element);
-            cornerstone.resize(element, true);
+            cornerstone.resize(element, false); // false = preserve zoom/pan state
           } catch (error) {
             // Ignore
           }

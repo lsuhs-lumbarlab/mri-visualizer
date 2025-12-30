@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { makeStyles } from '@material-ui/core/styles';
 import SvgIcon from '@mui/material/SvgIcon';
+import * as cornerstoneTools from 'cornerstone-tools';
 import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
 import { initCornerstone } from '../services/cornerstoneInit';
@@ -26,7 +27,8 @@ import {
   mdiTools,
   mdiRuler,
   mdiAngleAcute,
-  mdiCursorDefault
+  mdiCursorDefault,
+  mdiAxisZRotateClockwise
 } from '@mdi/js';
 
 import { 
@@ -87,6 +89,7 @@ const useStyles = makeStyles((theme) => ({
   },
   activeButton: {
     color: theme.palette.primary.main,
+    // backgroundColor: theme.palette.action.selected,
   },
   activeToolsButton: {
     color: theme.palette.text.primary,
@@ -127,6 +130,10 @@ const useStyles = makeStyles((theme) => ({
   toolButton: {
     color: theme.palette.text.primary,
   },
+  activeToolButton: {
+    color: theme.palette.primary.main,
+    backgroundColor: theme.palette.action.selected,
+  },
 }));
 
 function ViewerApp() {
@@ -155,6 +162,7 @@ function ViewerApp() {
   });
   const [coronalVisible, setCoronalVisible] = useState(false);
   const [toolsAnchorEl, setToolsAnchorEl] = useState(null);
+  const [activeTool, setActiveTool] = useState('no-tool');
 
   // Store references to viewport components
   const viewportRefs = useRef({
@@ -337,7 +345,50 @@ function ViewerApp() {
 
   const handleToolSelect = (toolName) => {
     console.log('Tool selected:', toolName);
-    // Tool logic will be implemented here
+    
+    // Get all viewport elements
+    const viewportElements = [
+      viewportRefs.current.sagittal?.getElement?.(),
+      viewportRefs.current.axial?.getElement?.(),
+      viewportRefs.current.coronal?.getElement?.(),
+    ].filter(Boolean);
+    
+    // Map tool names to Cornerstone tool names
+    const toolMap = {
+      'no-tool': null,
+      'pan': 'Pan',
+      'zoom': 'Zoom',
+      'wl/ww': 'Wwwc',
+      'distance': 'Length',
+      'angle': 'Angle',
+      'cobb-angle': 'CobbAngle',
+      'text': 'ArrowAnnotate',
+    };
+    
+    const cornerstoneTool = toolMap[toolName];
+    
+    // Deactivate previous tool and activate new tool on all viewports
+    viewportElements.forEach(element => {
+      try {
+        // Deactivate all interactive tools (keep scroll active)
+        ['Pan', 'Zoom', 'Wwwc', 'Length', 'Angle', 'CobbAngle', 'ArrowAnnotate'].forEach(tool => {
+          try {
+            cornerstoneTools.setToolPassiveForElement(element, tool);
+          } catch (e) {
+            // Tool might not be added to this element yet
+          }
+        });
+        
+        // Activate the selected tool with left mouse button
+        if (cornerstoneTool) {
+          cornerstoneTools.setToolActiveForElement(element, cornerstoneTool, { mouseButtonMask: 1 });
+        }
+      } catch (error) {
+        console.warn('Error switching tool on element:', error);
+      }
+    });
+    
+    setActiveTool(toolName);
     handleToolsClose();
   };
 
@@ -512,7 +563,7 @@ function ViewerApp() {
           <Box className={classes.toolsGrid}>
             <Tooltip title="No Tool">
               <IconButton
-                className={classes.toolButton}
+                className={activeTool === 'no-tool' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('no-tool')}
               >
                 <Icon path={mdiCursorDefault} size={1} />
@@ -521,7 +572,7 @@ function ViewerApp() {
             
             <Tooltip title="Pan">
               <IconButton
-                className={classes.toolButton}
+                className={activeTool === 'pan' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('pan')}
               >
                 <PanToolIcon />
@@ -530,7 +581,7 @@ function ViewerApp() {
 
             <Tooltip title="Zoom">
               <IconButton
-                className={classes.toolButton}
+                className={activeTool === 'zoom' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('zoom')}
               >
                 <ZoomInIcon />
@@ -539,7 +590,7 @@ function ViewerApp() {
 
             <Tooltip title="WL/WW">
               <IconButton
-                className={classes.toolButton}
+                className={activeTool === 'wl/ww' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('wl/ww')}
               >
                 <Brightness6Icon />
@@ -548,7 +599,7 @@ function ViewerApp() {
 
             <Tooltip title="Distance">
               <IconButton
-                className={classes.toolButton}
+                className={activeTool === 'distance' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('distance')}
               >
                 <Icon path={mdiRuler} size={1} />
@@ -557,16 +608,25 @@ function ViewerApp() {
 
             <Tooltip title="Angle">
               <IconButton
-                className={classes.toolButton}
+                className={activeTool === 'angle' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('angle')}
               >
                 <Icon path={mdiAngleAcute} size={1} />
               </IconButton>
             </Tooltip>
 
+            <Tooltip title="Cobb Angle">
+              <IconButton
+                className={activeTool === 'cobb-angle' ? classes.activeToolButton : classes.toolButton}
+                onClick={() => handleToolSelect('cobb-angle')}
+              >
+                <Icon path={mdiAxisZRotateClockwise} size={1} />
+              </IconButton>
+            </Tooltip>
+
             <Tooltip title="Text">
               <IconButton
-                className={classes.toolButton}
+                className={activeTool === 'text' ? classes.activeToolButton : classes.toolButton}
                 onClick={() => handleToolSelect('text')}
               >
                 <TextFieldsIcon />
