@@ -14,6 +14,7 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     minWidth: 0,
     border: '1px solid transparent',
+    boxSizing: 'border-box',
     transition: 'border-color 0.2s ease',
   },
   containerActive: {
@@ -26,6 +27,15 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    // Keep a tiny gutter so the canvas never visually touches the active border
+    padding: theme.spacing(0.25),
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+  },
+  viewportInner: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
   },
   viewportWrapperClickable: {
     cursor: 'pointer',
@@ -33,6 +43,11 @@ const useStyles = makeStyles((theme) => ({
   viewport: {
     width: '100%',
     height: '100%',
+  },
+  overlayCanvas: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
   },
   overlay: {
     position: 'absolute',
@@ -532,10 +547,12 @@ const CornerstoneViewport = forwardRef(({
         className={`${classes.viewportWrapper} ${hasImages ? classes.viewportWrapperClickable : ''}`}
         onClick={handleViewportWrapperClick}
       >
-        <div ref={viewportRef} className={classes.viewport} />
+        <div className={classes.viewportInner}>
+          <div ref={viewportRef} className={classes.viewport} />
 
-        {/* Reference lines overlay canvas */}
-        <canvas ref={overlayCanvasRef} className={classes.viewport} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
+          {/* Reference lines overlay canvas */}
+          <canvas ref={overlayCanvasRef} className={`${classes.viewport} ${classes.overlayCanvas}`} />
+        </div>
         
         {/* Overlays */}
         <Box className={`${classes.overlay} ${classes.topLeft}`}>
