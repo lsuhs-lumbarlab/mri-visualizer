@@ -3,13 +3,22 @@ import {
   Box, 
   CircularProgress, 
   IconButton, 
-  Tooltip 
+  Tooltip,
+  Popover,
+  Paper
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { 
   GridOn as GridOnIcon, 
   Logout as LogoutIcon, 
-  ArrowBack as ArrowBackIcon 
+  ArrowBack as ArrowBackIcon,
+  Build as BuildIcon,
+  PanTool as PanToolIcon,
+  ZoomIn as ZoomInIcon,
+  Straighten as StraightenIcon,
+  RadioButtonUnchecked as RadioButtonUncheckedIcon,
+  Crop as CropIcon,
+  TextFields as TextFieldsIcon
 } from '@mui/icons-material';
 import SvgIcon from '@mui/material/SvgIcon';
 import StudyExplorer from '../components/StudyExplorer';
@@ -72,6 +81,10 @@ const useStyles = makeStyles((theme) => ({
   activeButton: {
     color: theme.palette.primary.main,
   },
+  activeToolsButton: {
+    color: theme.palette.text.primary,
+    backgroundColor: theme.palette.action.selected,
+  },
   content: {
     display: 'flex',
     flex: 1,
@@ -94,6 +107,18 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(1),
     gap: theme.spacing(1),
     minWidth: 0,
+  },
+  toolsPanel: {
+    padding: theme.spacing(1),
+    border: `1px solid ${theme.palette.divider}`,
+  },
+  toolsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: theme.spacing(1),
+  },
+  toolButton: {
+    color: theme.palette.text.primary,
   },
 }));
 
@@ -122,6 +147,7 @@ function ViewerApp() {
     coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
   });
   const [coronalVisible, setCoronalVisible] = useState(false);
+  const [toolsAnchorEl, setToolsAnchorEl] = useState(null);
 
   // Store references to viewport components
   const viewportRefs = useRef({
@@ -292,6 +318,21 @@ function ViewerApp() {
     await logout();
   };
 
+  // Handle tools panel
+  const handleToolsClick = (event) => {
+    setToolsAnchorEl(event.currentTarget);
+  };
+
+  const handleToolsClose = () => {
+    setToolsAnchorEl(null);
+  };
+
+  const handleToolSelect = (toolName) => {
+    console.log('Tool selected:', toolName);
+    // Tool logic will be implemented here
+    handleToolsClose();
+  };
+
   // Handle back to library
   const handleBackToLibrary = () => {
     // Pass the patientId back to Library to restore selection
@@ -330,6 +371,15 @@ function ViewerApp() {
         </Box>
 
         <Box className={classes.headerRight}>
+          <Tooltip title="Tools">
+            <IconButton
+              className={Boolean(toolsAnchorEl) ? classes.activeToolsButton : classes.iconButton}
+              onClick={handleToolsClick}
+            >
+              <BuildIcon />
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title="Toggle Reference Lines">
             <IconButton
               className={referenceLinesEnabled ? classes.activeButton : classes.iconButton}
@@ -435,6 +485,79 @@ function ViewerApp() {
           )}
         </Box>
       </Box>
+
+      {/* Tools Panel */}
+      <Popover
+        open={Boolean(toolsAnchorEl)}
+        anchorEl={toolsAnchorEl}
+        onClose={handleToolsClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <Paper className={classes.toolsPanel}>
+          <Box className={classes.toolsGrid}>
+            <Tooltip title="Pan">
+              <IconButton
+                className={classes.toolButton}
+                onClick={() => handleToolSelect('pan')}
+              >
+                <PanToolIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Zoom">
+              <IconButton
+                className={classes.toolButton}
+                onClick={() => handleToolSelect('zoom')}
+              >
+                <ZoomInIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Ruler">
+              <IconButton
+                className={classes.toolButton}
+                onClick={() => handleToolSelect('ruler')}
+              >
+                <StraightenIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Ellipse">
+              <IconButton
+                className={classes.toolButton}
+                onClick={() => handleToolSelect('ellipse')}
+              >
+                <RadioButtonUncheckedIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Rectangle">
+              <IconButton
+                className={classes.toolButton}
+                onClick={() => handleToolSelect('rectangle')}
+              >
+                <CropIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Text">
+              <IconButton
+                className={classes.toolButton}
+                onClick={() => handleToolSelect('text')}
+              >
+                <TextFieldsIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Paper>
+      </Popover>
     </Box>
   );
 }
