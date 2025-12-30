@@ -76,9 +76,12 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flex: 1,
     overflow: 'hidden',
+    minWidth: 0,
   },
   sidebar: {
     width: 230,
+    flex: '0 0 230px',
+    flexShrink: 0,
     borderRight: `1px solid ${theme.palette.divider}`,
     overflow: 'auto',
     backgroundColor: theme.palette.background.paper,
@@ -90,6 +93,7 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'row',
     padding: theme.spacing(1),
     gap: theme.spacing(1),
+    minWidth: 0,
   },
 }));
 
@@ -117,7 +121,7 @@ function ViewerApp() {
     axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
     coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
   });
-  const [coronalVisible, setCoronalVisible] = useState(true); // Add this state
+  const [coronalVisible, setCoronalVisible] = useState(false);
 
   // Store references to viewport components
   const viewportRefs = useRef({
@@ -193,6 +197,11 @@ function ViewerApp() {
       const imageIds = await loadSeriesImageStack(series.seriesInstanceUID);
       const orientation = series.orientation.toLowerCase();
 
+      // If user selects a CORONAL series while COR viewport is hidden, show it
+      if (orientation === 'coronal') {
+        setCoronalVisible(true);
+      }
+
       console.log(`Loaded ${imageIds.length} images for ${orientation} orientation`);
 
       setViewportData((prev) => ({
@@ -242,8 +251,31 @@ function ViewerApp() {
 
   // Toggle coronal viewport visibility
   const toggleCoronalViewport = () => {
-    setCoronalVisible(prev => !prev);
+    setCoronalVisible((prevVisible) => {
+      const nextVisible = !prevVisible;
+
+      // If COR is being hidden and it was active, clear active viewport
+      if (!nextVisible) {
+        setActiveViewport((prevActive) => (prevActive === 'coronal' ? null : prevActive));
+      }
+
+      return nextVisible;
+    });
   };
+
+  // When layout changes (e.g., COR hidden/shown), force Cornerstone to resize and redraw
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      viewportRefs.current.sagittal?.resizeViewport?.();
+      viewportRefs.current.axial?.resizeViewport?.();
+      viewportRefs.current.coronal?.resizeViewport?.();
+
+      // Keep reference lines visually correct after resize
+      if (referenceLinesEnabled && activeViewport) {
+        updateReferenceLines(activeViewport);
+      }
+    });
+  }, [coronalVisible]);
 
   // Handle viewport click to set active viewport
   const handleViewportClick = (orientation) => {

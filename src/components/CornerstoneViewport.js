@@ -11,7 +11,8 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    minWidth: '33%',
+    flex: 1,
+    minWidth: 0,
     border: '1px solid transparent',
     transition: 'border-color 0.2s ease',
   },
@@ -285,6 +286,18 @@ const CornerstoneViewport = forwardRef(({
   useImperativeHandle(ref, () => ({
     updateReferenceLinesFromOther: () => {
       drawAllReferenceLines();
+    },
+    resizeViewport: () => {
+      const element = viewportRef.current;
+      if (!element) return;
+
+      try {
+        // Only resize if cornerstone has enabled the element
+        cornerstone.getEnabledElement(element);
+        cornerstone.resize(element, true);
+      } catch (error) {
+        // Ignore - element may not be enabled yet
+      }
     }
   }));
 
@@ -381,6 +394,24 @@ const CornerstoneViewport = forwardRef(({
     // Enable the element for cornerstone
     cornerstone.enable(element);
 
+    // Keep cornerstone canvas in sync with layout changes (e.g., when COR viewport is toggled)
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        // Defer resize to next frame to avoid resize/layout thrash
+        requestAnimationFrame(() => {
+          try {
+            cornerstone.getEnabledElement(element);
+            cornerstone.resize(element, true);
+          } catch (error) {
+            // Ignore
+          }
+        });
+      });
+
+      resizeObserver.observe(element);
+    }
+
     // Load the first image
     cornerstone.loadImage(imageIds[0]).then((image) => {
       currentImageRef.current = image;
@@ -414,6 +445,14 @@ const CornerstoneViewport = forwardRef(({
       if (element) {
         element.removeEventListener('cornerstoneimagerendered', onImageRendered);
         element.removeEventListener('cornerstonetoolsstackscroll', onStackScroll);
+
+        if (resizeObserver) {
+          try {
+            resizeObserver.disconnect();
+          } catch (error) {
+            // Ignore
+          }
+        }
         
         // Clear cornerstone element
         try {
