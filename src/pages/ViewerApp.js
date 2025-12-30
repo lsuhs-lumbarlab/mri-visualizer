@@ -57,34 +57,37 @@ const CorIcon = (props) => (
   </SvgIcon>
 );
 
-// Custom Cobb Angle icon (4 lines: two endplate lines + two perpendiculars)
+// Custom Cobb Angle icon
 const CobbAngleIcon = (props) => (
   <SvgIcon {...props} viewBox="0 0 24 24">
-    {/* 4 lines */}
-    <path
+    {/* Top endplate line */}
+    <path 
       d="M3 9 L21 4"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
     />
+    {/* Bottom endplate line */}
     <path
       d="M3 15 L21 20"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
     />
+    {/* Top perpendicular line */}
     <path
       d="M14 6 L16 12"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth="2"
       strokeLinecap="round"
     />
+    {/* Bottom perpendicular line */}
     <path
       d="M14 18 L16 12"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth="2"
       strokeLinecap="round"
     />
   </SvgIcon>
