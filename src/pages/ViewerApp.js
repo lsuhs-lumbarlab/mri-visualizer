@@ -1,4 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import Icon from '@mdi/react';
+import { makeStyles } from '@material-ui/core/styles';
+import SvgIcon from '@mui/material/SvgIcon';
+import StudyExplorer from '../components/StudyExplorer';
+import CornerstoneViewport from '../components/CornerstoneViewport';
+import { initCornerstone } from '../services/cornerstoneInit';
+import { loadSeriesImageStack } from '../services/dicomLoader';
+import { formatDicomDate, formatDicomTime } from '../utils/dateTimeFormatter';
+import { formatPatientName } from '../utils/patientNameFormatter';
+import db from '../database/db';
+import { useAuth } from '../contexts/AuthContext';
+
 import { 
   Box, 
   CircularProgress, 
@@ -7,29 +20,23 @@ import {
   Popover,
   Paper
 } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
+
+import {
+  mdiArrowSplitHorizontal,
+  mdiTools,
+  mdiRuler,
+  mdiAngleAcute,
+  mdiCursorDefault
+} from '@mdi/js';
+
 import { 
-  GridOn as GridOnIcon, 
   Logout as LogoutIcon, 
   ArrowBack as ArrowBackIcon,
-  Build as BuildIcon,
   PanTool as PanToolIcon,
   ZoomIn as ZoomInIcon,
-  Straighten as StraightenIcon,
-  RadioButtonUnchecked as RadioButtonUncheckedIcon,
-  Crop as CropIcon,
+  Brightness6 as Brightness6Icon,
   TextFields as TextFieldsIcon
 } from '@mui/icons-material';
-import SvgIcon from '@mui/material/SvgIcon';
-import StudyExplorer from '../components/StudyExplorer';
-import CornerstoneViewport from '../components/CornerstoneViewport';
-import { initCornerstone } from '../services/cornerstoneInit';
-import { loadSeriesImageStack } from '../services/dicomLoader';
-import { formatDicomDate, formatDicomTime } from '../utils/dateTimeFormatter';
-import db from '../database/db';
-import { useAuth } from '../contexts/AuthContext';
-import { formatPatientName } from '../utils/patientNameFormatter';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 // Custom COR icon component
 const CorIcon = (props) => (
@@ -376,7 +383,7 @@ function ViewerApp() {
               className={Boolean(toolsAnchorEl) ? classes.activeToolsButton : classes.iconButton}
               onClick={handleToolsClick}
             >
-              <BuildIcon />
+              <Icon path={mdiTools} size={1} />
             </IconButton>
           </Tooltip>
 
@@ -385,7 +392,7 @@ function ViewerApp() {
               className={referenceLinesEnabled ? classes.activeButton : classes.iconButton}
               onClick={toggleReferenceLines}
             >
-              <GridOnIcon />
+              <Icon path={mdiArrowSplitHorizontal} size={1} />
             </IconButton>
           </Tooltip>
 
@@ -502,6 +509,15 @@ function ViewerApp() {
       >
         <Paper className={classes.toolsPanel}>
           <Box className={classes.toolsGrid}>
+            <Tooltip title="No Tool">
+              <IconButton
+                className={classes.toolButton}
+                onClick={() => handleToolSelect('no-tool')}
+              >
+                <Icon path={mdiCursorDefault} size={1} />
+              </IconButton>
+            </Tooltip>
+            
             <Tooltip title="Pan">
               <IconButton
                 className={classes.toolButton}
@@ -520,30 +536,30 @@ function ViewerApp() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Ruler">
+            <Tooltip title="WL/WW">
               <IconButton
                 className={classes.toolButton}
-                onClick={() => handleToolSelect('ruler')}
+                onClick={() => handleToolSelect('wl/ww')}
               >
-                <StraightenIcon />
+                <Brightness6Icon />
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Ellipse">
+            <Tooltip title="Distance">
               <IconButton
                 className={classes.toolButton}
-                onClick={() => handleToolSelect('ellipse')}
+                onClick={() => handleToolSelect('distance')}
               >
-                <RadioButtonUncheckedIcon />
+                <Icon path={mdiRuler} size={1} />
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Rectangle">
+            <Tooltip title="Angle">
               <IconButton
                 className={classes.toolButton}
-                onClick={() => handleToolSelect('rectangle')}
+                onClick={() => handleToolSelect('angle')}
               >
-                <CropIcon />
+                <Icon path={mdiAngleAcute} size={1} />
               </IconButton>
             </Tooltip>
 
