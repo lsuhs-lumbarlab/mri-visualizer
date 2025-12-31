@@ -91,7 +91,6 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (authState.isAuthenticated) {
-      console.log('👤 Already authenticated, redirecting to:', from);
       navigate(from, { replace: true });
     }
   }, [authState.isAuthenticated, navigate, from]);
@@ -143,7 +142,6 @@ const Login = () => {
     setIsLoading(false);
     
     if (result.success) {
-      console.log('✅ Login successful, redirecting to:', from);
       navigate(from, { replace: true });
     } else {
       setApiError(result.error);

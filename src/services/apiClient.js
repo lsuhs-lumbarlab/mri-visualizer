@@ -3,9 +3,6 @@ import axios from 'axios';
 // Use environment variable with /api/v1 base path
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-// Log the API base URL for verification (remove after testing)
-console.log('🔧 API Base URL configured:', API_BASE_URL);
-
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -72,14 +69,13 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       
       if (!refreshToken) {
-        console.warn('⚠️ No refresh token available, redirecting to login');
+        console.warn('No refresh token available, redirecting to login');
         isRefreshing = false;
         clearAuthAndRedirect();
         return Promise.reject(error);
       }
 
       try {
-        console.log('🔄 Access token expired, attempting refresh...');
         // Import authService dynamically to avoid circular dependency
         const authService = (await import('./authService')).default;
         const response = await authService.refreshToken(refreshToken);
@@ -88,7 +84,6 @@ apiClient.interceptors.response.use(
         
         // Update stored token
         localStorage.setItem('access_token', newAccessToken);
-        console.log('✅ Token refreshed, retrying original request');
         
         // Update authorization header
         apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
@@ -100,7 +95,7 @@ apiClient.interceptors.response.use(
         // Retry the original request
         return apiClient(originalRequest);
       } catch (refreshError) {
-        console.error('❌ Token refresh failed:', refreshError.message);
+        console.error('Token refresh failed:', refreshError.message);
         processQueue(refreshError, null);
         isRefreshing = false;
         clearAuthAndRedirect();
@@ -119,7 +114,6 @@ function clearAuthAndRedirect() {
   
   // Only redirect if not already on login page
   if (window.location.pathname !== '/login') {
-    console.log('🚪 Redirecting to login...');
     window.location.href = '/login';
   }
 }

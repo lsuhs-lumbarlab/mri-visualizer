@@ -158,11 +158,6 @@ const SignUp = () => {
       return;
     }
     
-    console.log('📝 Signup form submitted:', { 
-      username: formData.username, 
-      userType: formData.userType 
-    });
-    
     // Call signup
     setIsLoading(true);
     const result = await signup({
@@ -173,11 +168,10 @@ const SignUp = () => {
     setIsLoading(false);
     
     if (result.success) {
-      console.log('✅ Signup successful, redirecting to success page');
       // Redirect to success page
       navigate('/signup/success');
     } else {
-      console.error('❌ Signup failed:', result.error);
+      console.error('Signup failed:', result.error);
       setApiError(result.error);
     }
   };

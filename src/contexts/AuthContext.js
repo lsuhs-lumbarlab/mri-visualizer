@@ -22,10 +22,8 @@ export const AuthProvider = ({ children }) => {
       // Validate token with backend
       const validateToken = async () => {
         try {
-          console.log('🔄 Validating stored token with /auth/me');
           const userData = await authService.getCurrentUser();
           
-          console.log('✅ Token valid, session restored for user:', userData.username || userData.email);
           setAuthState({
             token: access_token,
             user: userData,
@@ -33,7 +31,7 @@ export const AuthProvider = ({ children }) => {
             isLoading: false,
           });
         } catch (error) {
-          console.warn('⚠️ Token validation failed, clearing session:', error.message);
+          console.warn('Token validation failed, clearing session:', error.message);
           // Token invalid - clear everything
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
@@ -49,7 +47,6 @@ export const AuthProvider = ({ children }) => {
       
       validateToken();
     } else {
-      console.log('ℹ️ No stored tokens found');
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   }, []);
@@ -58,8 +55,6 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.login(username, password);
       const { access_token, refresh_token, user } = response;
-      
-      console.log('🔐 Storing tokens and user in localStorage');
       
       // Save to localStorage - use exact token names from backend
       localStorage.setItem('access_token', access_token);
@@ -74,10 +69,9 @@ export const AuthProvider = ({ children }) => {
         isLoading: false,
       });
       
-      console.log('✅ Login successful, user:', user.username);
       return { success: true };
     } catch (error) {
-      console.error('❌ Login failed:', error.response?.data || error.message);
+      console.error('Login failed:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Login failed',
@@ -126,8 +120,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('authUser');
-    
-    console.log('🚪 Logged out - tokens cleared');
     
     // Reset state
     setAuthState({
