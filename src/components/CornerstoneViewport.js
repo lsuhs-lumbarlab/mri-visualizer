@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { Box, Slider, Typography, Paper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import * as cornerstone from 'cornerstone-core';
@@ -11,8 +11,10 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    minWidth: '33%',
+    flex: 1,
+    minWidth: 0,
     border: '1px solid transparent',
+    boxSizing: 'border-box',
     transition: 'border-color 0.2s ease',
   },
   containerActive: {
@@ -25,6 +27,15 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    // Keep a tiny gutter so the canvas never visually touches the active border
+    padding: theme.spacing(0.25),
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+  },
+  viewportInner: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
   },
   viewportWrapperClickable: {
     cursor: 'pointer',
@@ -32,6 +43,11 @@ const useStyles = makeStyles((theme) => ({
   viewport: {
     width: '100%',
     height: '100%',
+  },
+  overlayCanvas: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
   },
   overlay: {
     position: 'absolute',
@@ -285,6 +301,21 @@ const CornerstoneViewport = forwardRef(({
   useImperativeHandle(ref, () => ({
     updateReferenceLinesFromOther: () => {
       drawAllReferenceLines();
+    },
+    resizeViewport: () => {
+      const element = viewportRef.current;
+      if (!element) return;
+
+      try {
+        // Only resize if cornerstone has enabled the element
+        cornerstone.getEnabledElement(element);
+        cornerstone.resize(element, false); // false = preserve zoom/pan state
+      } catch (error) {
+        // Ignore - element may not be enabled yet
+      }
+    },
+    getElement: () => {
+      return viewportRef.current;
     }
   }));
 
@@ -381,6 +412,24 @@ const CornerstoneViewport = forwardRef(({
     // Enable the element for cornerstone
     cornerstone.enable(element);
 
+    // Keep cornerstone canvas in sync with layout changes (e.g., when COR viewport is toggled)
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        // Defer resize to next frame to avoid resize/layout thrash
+        requestAnimationFrame(() => {
+          try {
+            cornerstone.getEnabledElement(element);
+            cornerstone.resize(element, false); // false = preserve zoom/pan state
+          } catch (error) {
+            // Ignore
+          }
+        });
+      });
+
+      resizeObserver.observe(element);
+    }
+
     // Load the first image
     cornerstone.loadImage(imageIds[0]).then((image) => {
       currentImageRef.current = image;
@@ -414,6 +463,14 @@ const CornerstoneViewport = forwardRef(({
       if (element) {
         element.removeEventListener('cornerstoneimagerendered', onImageRendered);
         element.removeEventListener('cornerstonetoolsstackscroll', onStackScroll);
+
+        if (resizeObserver) {
+          try {
+            resizeObserver.disconnect();
+          } catch (error) {
+            // Ignore
+          }
+        }
         
         // Clear cornerstone element
         try {
@@ -423,6 +480,7 @@ const CornerstoneViewport = forwardRef(({
         }
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageIds]);
 
   // Redraw reference lines when enabled/disabled, viewport data changes, OR activeViewport changes
@@ -432,7 +490,8 @@ const CornerstoneViewport = forwardRef(({
     } else {
       clearReferenceLines();
     }
-  }, [referenceLinesEnabled, viewportData, activeViewport]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceLinesEnabled, viewportData, activeViewport, imageIds.length]);
 
   const handleSliceChange = (event, newValue) => {
     const element = viewportRef.current;
@@ -493,10 +552,12 @@ const CornerstoneViewport = forwardRef(({
         className={`${classes.viewportWrapper} ${hasImages ? classes.viewportWrapperClickable : ''}`}
         onClick={handleViewportWrapperClick}
       >
-        <div ref={viewportRef} className={classes.viewport} />
+        <div className={classes.viewportInner}>
+          <div ref={viewportRef} className={classes.viewport} />
 
-        {/* Reference lines overlay canvas */}
-        <canvas ref={overlayCanvasRef} className={classes.viewport} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
+          {/* Reference lines overlay canvas */}
+          <canvas ref={overlayCanvasRef} className={`${classes.viewport} ${classes.overlayCanvas}`} />
+        </div>
         
         {/* Overlays */}
         <Box className={`${classes.overlay} ${classes.topLeft}`}>

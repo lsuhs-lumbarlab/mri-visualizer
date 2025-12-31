@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -10,8 +10,10 @@ import {
   CircularProgress,
 } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { 
+  Visibility as VisibilityIcon, 
+  VisibilityOff as VisibilityOffIcon 
+} from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -161,7 +163,7 @@ const Login = () => {
     <div className={classes.container}>
       <Paper className={classes.paper} elevation={3}>
           <Typography variant="h4" className={classes.title}>
-            MRI Visualizer
+            DICOM Viewer
           </Typography>
           
           <Typography variant="h6" style={{ marginBottom: 24, textAlign: 'center', color: '#ffffff' }}>

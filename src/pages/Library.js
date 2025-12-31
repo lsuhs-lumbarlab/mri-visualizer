@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import { 
   Box, 
-  Button, 
   Typography, 
   Card, 
   CardContent,
@@ -10,10 +9,12 @@ import {
   CircularProgress,
   Tooltip,
 } from '@material-ui/core';
-import InfoIcon from '@mui/icons-material/Info';
-import ShareIcon from '@mui/icons-material/Share';
-import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { 
+  Info as InfoIcon, 
+  Share as ShareIcon,
+  DriveFolderUpload as DriveFolderUploadIcon, 
+  Logout as LogoutIcon 
+} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import libraryService from '../services/libraryService';

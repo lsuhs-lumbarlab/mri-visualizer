@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Paper,
   TextField,
@@ -11,9 +11,10 @@ import {
   MenuItem,
 } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { 
+  Visibility as VisibilityIcon, 
+  VisibilityOff as VisibilityOffIcon 
+} from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
