@@ -15,7 +15,7 @@ import {
   VisibilityOff as VisibilityOffIcon 
 } from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const useStyles = makeStyles((theme) => ({
@@ -68,7 +68,11 @@ const useStyles = makeStyles((theme) => ({
 const Login = () => {
   const classes = useStyles();
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, authState } = useAuth();
+
+  // Get the page user was trying to access (from ProtectedRoute)
+  const from = location.state?.from || '/library';
 
   const [formData, setFormData] = useState({
     username: '',
@@ -87,9 +91,10 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (authState.isAuthenticated) {
-      navigate('/library', { replace: true });
+      console.log('👤 Already authenticated, redirecting to:', from);
+      navigate(from, { replace: true });
     }
-  }, [authState.isAuthenticated, navigate]);
+  }, [authState.isAuthenticated, navigate, from]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -138,7 +143,8 @@ const Login = () => {
     setIsLoading(false);
     
     if (result.success) {
-      navigate('/library');
+      console.log('✅ Login successful, redirecting to:', from);
+      navigate(from, { replace: true });
     } else {
       setApiError(result.error);
     }
