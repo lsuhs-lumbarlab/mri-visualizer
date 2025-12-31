@@ -14,29 +14,38 @@ export const AuthProvider = ({ children }) => {
 
   // Restore auth from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const access_token = localStorage.getItem('access_token');
+    const refresh_token = localStorage.getItem('refresh_token');
     const userStr = localStorage.getItem('authUser');
     
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setAuthState({
-          token,
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
-        setAuthState({
-          token: null,
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      }
+    if (access_token && userStr) {
+      // Validate token with backend
+      const validateToken = async () => {
+        try {
+          const userData = await authService.getCurrentUser();
+          
+          setAuthState({
+            token: access_token,
+            user: userData,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          console.warn('Token validation failed, clearing session:', error.message);
+          // Token invalid - clear everything
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('authUser');
+          setAuthState({
+            token: null,
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+        }
+      };
+      
+      validateToken();
     } else {
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
@@ -45,15 +54,16 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       const response = await authService.login(username, password);
-      const { token, user } = response;
+      const { access_token, refresh_token, user } = response;
       
-      // Save to localStorage
-      localStorage.setItem('authToken', token);
+      // Save to localStorage - use exact token names from backend
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('authUser', JSON.stringify(user));
       
       // Update state
       setAuthState({
-        token,
+        token: access_token,
         user,
         isAuthenticated: true,
         isLoading: false,
@@ -61,6 +71,7 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('Login failed:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Login failed',
@@ -68,14 +79,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async ({ username, password, userType }) => {
+  const signup = async ({ email, password, fullName }) => {
     try {
-      const response = await authService.signup({ username, password, userType });
+      const response = await authService.signup({ email, password, fullName });
       return { success: true, data: response };
     } catch (error) {
+      console.error('Signup failed:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Signup failed',
+        error: error.response?.data?.detail || error.message || 'Signup failed',
       };
     }
   };
@@ -105,8 +117,9 @@ export const AuthProvider = ({ children }) => {
       }
     }
     
-    // Clear localStorage
-    localStorage.removeItem('authToken');
+    // Clear localStorage - remove both tokens
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('authUser');
     
     // Reset state

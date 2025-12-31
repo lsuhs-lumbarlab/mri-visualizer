@@ -69,29 +69,23 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const userTypes = [
-  { value: 'hospital', label: 'Hospital' },
-  { value: 'clinician', label: 'Clinician' },
-  { value: 'patient', label: 'Patient' },
-];
-
 const SignUp = () => {
   const classes = useStyles();
   const navigate = useNavigate();
   const { signup } = useAuth();
 
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
+    fullName: '',
     password: '',
     confirmPassword: '',
-    userType: '',
   });
 
   const [errors, setErrors] = useState({
-    username: '',
+    email: '',
+    fullName: '',
     password: '',
     confirmPassword: '',
-    userType: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -117,18 +111,25 @@ const SignUp = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    // Username validation
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email address is invalid';
+    }
+    
+    // Full name validation
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+    } else if (formData.fullName.trim().length < 2) {
+      newErrors.fullName = 'Full name must be at least 2 characters';
     }
     
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
     }
     
     // Confirm password validation
@@ -136,11 +137,6 @@ const SignUp = () => {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    // User type validation
-    if (!formData.userType) {
-      newErrors.userType = 'Please select a user type';
     }
     
     setErrors(newErrors);
@@ -161,9 +157,9 @@ const SignUp = () => {
     // Call signup
     setIsLoading(true);
     const result = await signup({
-      username: formData.username,
+      email: formData.email,
       password: formData.password,
-      userType: formData.userType,
+      fullName: formData.fullName,
     });
     setIsLoading(false);
     
@@ -171,6 +167,7 @@ const SignUp = () => {
       // Redirect to success page
       navigate('/signup/success');
     } else {
+      console.error('Signup failed:', result.error);
       setApiError(result.error);
     }
   };
@@ -214,39 +211,35 @@ const SignUp = () => {
         <form className={classes.form} onSubmit={handleSubmit}>
           <TextField
             fullWidth
-            label="Username"
-            name="username"
-            value={formData.username}
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
             onChange={handleChange}
             onKeyPress={handleKeyPress}
-            error={!!errors.username}
-            helperText={errors.username}
+            error={!!errors.email}
+            helperText={errors.email}
             className={classes.textField}
             variant="outlined"
-            autoComplete="username"
+            autoComplete="email"
             disabled={isLoading}
             autoFocus
           />
 
           <TextField
             fullWidth
-            select
-            label="User Type"
-            name="userType"
-            value={formData.userType}
+            label="Full Name"
+            name="fullName"
+            value={formData.fullName}
             onChange={handleChange}
-            error={!!errors.userType}
-            helperText={errors.userType}
+            onKeyPress={handleKeyPress}
+            error={!!errors.fullName}
+            helperText={errors.fullName}
             className={classes.textField}
             variant="outlined"
+            autoComplete="name"
             disabled={isLoading}
-          >
-            {userTypes.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
 
           <TextField
             fullWidth

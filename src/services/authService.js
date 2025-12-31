@@ -1,23 +1,25 @@
-import apiClient from './apiClient';
+import apiClient, { API_BASE_URL } from './apiClient';
+import axios from 'axios';
 
 const authService = {
   /**
    * Login user
-   * @param {string} username
+   * @param {string} email
    * @param {string} password
-   * @returns {Promise<{token: string, user: object}>}
+   * @returns {Promise<{access_token: string, refresh_token: string, user: object}>}
    */
-  login: async (username, password) => {
+  login: async (email, password) => {
     const response = await apiClient.post('/auth/login', {
-      username,
+      email,
       password,
     });
     
-    // Be flexible with response structure
-    // Backend might return { token, user } or { access_token, user } etc.
     const data = response.data;
+    
+    // Backend returns { access_token, refresh_token, user }
     return {
-      token: data.token || data.access_token || data.accessToken,
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
       user: data.user || { username: data.username },
     };
   },
@@ -25,18 +27,43 @@ const authService = {
   /**
    * Sign up new user
    * @param {object} params
-   * @param {string} params.username
+   * @param {string} params.email
    * @param {string} params.password
-   * @param {string} params.userType - 'hospital', 'clinician', or 'patient'
+   * @param {string} params.fullName
    * @returns {Promise<object>}
    */
-  signup: async ({ username, password, userType }) => {
-    const response = await apiClient.post('/auth/signup', {
-      username,
+  signup: async ({ email, password, fullName }) => {
+    const response = await apiClient.post('/auth/register', {
+      email,
       password,
-      userType,
+      full_name: fullName,
     });
     
+    return response.data;
+  },
+
+  /**
+   * Get current authenticated user
+   * Validates the stored access token and returns user data
+   * @returns {Promise<object>} User object
+   */
+  getCurrentUser: async () => {
+    const response = await apiClient.get('/auth/me');
+    return response.data;
+  },
+
+  /**
+   * Refresh access token using refresh token
+   * @param {string} refreshToken - The refresh token
+   * @returns {Promise<{access_token: string}>}
+   */
+  refreshToken: async (refreshToken) => {
+    // Create a new axios instance without interceptors to avoid infinite loops
+    const response = await axios.post(
+      `${API_BASE_URL}/auth/refresh`,
+      { refresh_token: refreshToken },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
     return response.data;
   },
 };

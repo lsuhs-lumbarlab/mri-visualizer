@@ -15,7 +15,7 @@ import {
   VisibilityOff as VisibilityOffIcon 
 } from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const useStyles = makeStyles((theme) => ({
@@ -68,15 +68,19 @@ const useStyles = makeStyles((theme) => ({
 const Login = () => {
   const classes = useStyles();
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, authState } = useAuth();
 
+  // Get the page user was trying to access (from ProtectedRoute)
+  const from = location.state?.from || '/library';
+
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
 
   const [errors, setErrors] = useState({
-    username: '',
+    email: '',
     password: '',
   });
 
@@ -87,9 +91,9 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (authState.isAuthenticated) {
-      navigate('/library', { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [authState.isAuthenticated, navigate]);
+  }, [authState.isAuthenticated, navigate, from]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -109,8 +113,8 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
     }
     
     if (!formData.password) {
@@ -134,11 +138,11 @@ const Login = () => {
     
     // Call login
     setIsLoading(true);
-    const result = await login(formData.username, formData.password);
+    const result = await login(formData.email, formData.password);
     setIsLoading(false);
     
     if (result.success) {
-      navigate('/library');
+      navigate(from, { replace: true });
     } else {
       setApiError(result.error);
     }
@@ -179,16 +183,17 @@ const Login = () => {
           <form className={classes.form} onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Username"
-              name="username"
-              value={formData.username}
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
               onChange={handleChange}
               onKeyPress={handleKeyPress}
-              error={!!errors.username}
-              helperText={errors.username}
+              error={!!errors.email}
+              helperText={errors.email}
               className={classes.textField}
               variant="outlined"
-              autoComplete="username"
+              autoComplete="email"
               disabled={isLoading}
               autoFocus
             />
