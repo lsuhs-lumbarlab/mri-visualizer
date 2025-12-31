@@ -79,14 +79,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async ({ username, password, userType }) => {
+  const signup = async ({ email, password, fullName }) => {
     try {
-      const response = await authService.signup({ username, password, userType });
+      const response = await authService.signup({ email, password, fullName });
       return { success: true, data: response };
     } catch (error) {
+      console.error('Signup failed:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Signup failed',
+        error: error.response?.data?.detail || error.message || 'Signup failed',
       };
     }
   };

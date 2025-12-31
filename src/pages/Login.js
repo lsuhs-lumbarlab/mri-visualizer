@@ -75,12 +75,12 @@ const Login = () => {
   const from = location.state?.from || '/library';
 
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
 
   const [errors, setErrors] = useState({
-    username: '',
+    email: '',
     password: '',
   });
 
@@ -113,8 +113,8 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
     }
     
     if (!formData.password) {
@@ -138,7 +138,7 @@ const Login = () => {
     
     // Call login
     setIsLoading(true);
-    const result = await login(formData.username, formData.password);
+    const result = await login(formData.email, formData.password);
     setIsLoading(false);
     
     if (result.success) {
@@ -183,16 +183,17 @@ const Login = () => {
           <form className={classes.form} onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Username"
-              name="username"
-              value={formData.username}
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
               onChange={handleChange}
               onKeyPress={handleKeyPress}
-              error={!!errors.username}
-              helperText={errors.username}
+              error={!!errors.email}
+              helperText={errors.email}
               className={classes.textField}
               variant="outlined"
-              autoComplete="username"
+              autoComplete="email"
               disabled={isLoading}
               autoFocus
             />

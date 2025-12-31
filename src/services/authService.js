@@ -1,16 +1,16 @@
-import apiClient from './apiClient';
+import apiClient, { API_BASE_URL } from './apiClient';
 import axios from 'axios';
 
 const authService = {
   /**
    * Login user
-   * @param {string} username
+   * @param {string} email
    * @param {string} password
    * @returns {Promise<{access_token: string, refresh_token: string, user: object}>}
    */
-  login: async (username, password) => {
+  login: async (email, password) => {
     const response = await apiClient.post('/auth/login', {
-      username,
+      email,
       password,
     });
     
@@ -27,16 +27,16 @@ const authService = {
   /**
    * Sign up new user
    * @param {object} params
-   * @param {string} params.username
+   * @param {string} params.email
    * @param {string} params.password
-   * @param {string} params.userType - 'hospital', 'clinician', or 'patient'
+   * @param {string} params.fullName
    * @returns {Promise<object>}
    */
-  signup: async ({ username, password, userType }) => {
+  signup: async ({ email, password, fullName }) => {
     const response = await apiClient.post('/auth/register', {
-      username,
+      email,
       password,
-      user_type: userType,
+      full_name: fullName,
     });
     
     return response.data;
@@ -60,7 +60,7 @@ const authService = {
   refreshToken: async (refreshToken) => {
     // Create a new axios instance without interceptors to avoid infinite loops
     const response = await axios.post(
-      `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/v1'}/auth/refresh`,
+      `${API_BASE_URL}/auth/refresh`,
       { refresh_token: refreshToken },
       { headers: { 'Content-Type': 'application/json' } }
     );
