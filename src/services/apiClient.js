@@ -112,9 +112,10 @@ function clearAuthAndRedirect() {
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('authUser');
   
-  // Only redirect if not already on login page
-  if (window.location.pathname !== '/login') {
-    window.location.href = '/login';
+  // Use hash-based routing for GitHub Pages compatibility
+  const currentHash = window.location.hash;
+  if (!currentHash.includes('#/login')) {
+    window.location.hash = '#/login';
   }
 }
 
