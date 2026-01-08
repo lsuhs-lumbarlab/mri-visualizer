@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
   // Restore auth from localStorage on mount
   useEffect(() => {
     const access_token = localStorage.getItem('access_token');
-    const refresh_token = localStorage.getItem('refresh_token');
     const userStr = localStorage.getItem('authUser');
     
     if (access_token && userStr) {
@@ -93,20 +92,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Call backend logout endpoint (for future token blacklisting)
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error.message);
+      // Continue with client-side cleanup even if backend call fails
+    }
+
     try {
       // Delete IndexedDB - remove all DICOM data for privacy/security
-      console.log('Deleting IndexedDB on logout...');
-      
-      // Close the database connection first
       db.close();
-      
-      // Delete the entire database
       await db.delete();
-      
-      // Reopen to ensure it's recreated properly
       await db.open();
-      
-      console.log('IndexedDB deleted successfully');
     } catch (error) {
       console.error('Error deleting IndexedDB on logout:', error);
       // Try to reopen the database even if delete fails

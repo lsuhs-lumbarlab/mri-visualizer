@@ -66,6 +66,15 @@ const authService = {
     );
     return response.data;
   },
+
+  /**
+   * Logout user
+   * Calls backend to invalidate token (future token blacklisting)
+   * @returns {Promise<void>}
+   */
+  logout: async () => {
+    await apiClient.post('/auth/logout');
+  },
 };
 
 export default authService;

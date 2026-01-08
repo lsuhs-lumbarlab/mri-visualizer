@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { makeStyles } from '@material-ui/core/styles';
@@ -224,6 +224,56 @@ function ViewerApp() {
     };
   }, []);
 
+  // Tool selection handler - defined before useEffect to avoid no-use-before-define warning
+  const handleToolSelect = useCallback((toolName) => {
+    console.log('Tool selected:', toolName);
+    
+    // Get all viewport elements
+    const viewportElements = [
+      viewportRefs.current.sagittal?.getElement?.(),
+      viewportRefs.current.axial?.getElement?.(),
+      viewportRefs.current.coronal?.getElement?.(),
+    ].filter(Boolean);
+    
+    // Map tool names to Cornerstone tool names
+    const toolMap = {
+      'no-tool': null,
+      'pan': 'Pan',
+      'zoom': 'Zoom',
+      'wl/ww': 'Wwwc',
+      'distance': 'Length',
+      'angle': 'Angle',
+      'cobb-angle': 'CobbAngle',
+      'text': 'ArrowAnnotate',
+    };
+    
+    const cornerstoneTool = toolMap[toolName];
+    
+    // Deactivate previous tool and activate new tool on all viewports
+    viewportElements.forEach(element => {
+      try {
+        // Deactivate all interactive tools (keep scroll active)
+        ['Pan', 'Zoom', 'Wwwc', 'Length', 'Angle', 'CobbAngle', 'ArrowAnnotate'].forEach(tool => {
+          try {
+            cornerstoneTools.setToolPassiveForElement(element, tool);
+          } catch (e) {
+            // Tool might not be added to this element yet
+          }
+        });
+        
+        // Activate the selected tool with left mouse button
+        if (cornerstoneTool) {
+          cornerstoneTools.setToolActiveForElement(element, cornerstoneTool, { mouseButtonMask: 1 });
+        }
+      } catch (error) {
+        console.warn('Error switching tool on element:', error);
+      }
+    });
+    
+    setActiveTool(toolName);
+    setToolsAnchorEl(null); // Close tools menu
+  }, []);
+
   // Keyboard shortcuts for tool selection
   useEffect(() => {
     const handleKeyPress = (event) => {
@@ -256,7 +306,7 @@ function ViewerApp() {
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [activeTool]); // Include activeTool in deps to ensure latest handleToolSelect is used
+  }, [activeTool, handleToolSelect]);
 
   // Load study data when component mounts or studyId changes
   useEffect(() => {
@@ -410,55 +460,6 @@ function ViewerApp() {
 
   const handleToolsClose = () => {
     setToolsAnchorEl(null);
-  };
-
-  const handleToolSelect = (toolName) => {
-    console.log('Tool selected:', toolName);
-    
-    // Get all viewport elements
-    const viewportElements = [
-      viewportRefs.current.sagittal?.getElement?.(),
-      viewportRefs.current.axial?.getElement?.(),
-      viewportRefs.current.coronal?.getElement?.(),
-    ].filter(Boolean);
-    
-    // Map tool names to Cornerstone tool names
-    const toolMap = {
-      'no-tool': null,
-      'pan': 'Pan',
-      'zoom': 'Zoom',
-      'wl/ww': 'Wwwc',
-      'distance': 'Length',
-      'angle': 'Angle',
-      'cobb-angle': 'CobbAngle',
-      'text': 'ArrowAnnotate',
-    };
-    
-    const cornerstoneTool = toolMap[toolName];
-    
-    // Deactivate previous tool and activate new tool on all viewports
-    viewportElements.forEach(element => {
-      try {
-        // Deactivate all interactive tools (keep scroll active)
-        ['Pan', 'Zoom', 'Wwwc', 'Length', 'Angle', 'CobbAngle', 'ArrowAnnotate'].forEach(tool => {
-          try {
-            cornerstoneTools.setToolPassiveForElement(element, tool);
-          } catch (e) {
-            // Tool might not be added to this element yet
-          }
-        });
-        
-        // Activate the selected tool with left mouse button
-        if (cornerstoneTool) {
-          cornerstoneTools.setToolActiveForElement(element, cornerstoneTool, { mouseButtonMask: 1 });
-        }
-      } catch (error) {
-        console.warn('Error switching tool on element:', error);
-      }
-    });
-    
-    setActiveTool(toolName);
-    handleToolsClose();
   };
 
   // Handle back to library
