@@ -4,6 +4,7 @@ import * as cornerstoneMath from 'cornerstone-math';
 import * as cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import Hammer from 'hammerjs';
+import PelvicParameterTool from '../tools/PelvicParameterTool';
 
 let isInitialized = false;
 
@@ -40,6 +41,9 @@ export const initCornerstone = () => {
     showSVGCursors: false,
   });
 
+  // Register custom tools
+  cornerstoneTools.addTool(PelvicParameterTool);
+
   isInitialized = true;
   console.log('Cornerstone initialized successfully');
 };
@@ -61,6 +65,7 @@ export const enableViewportTools = (element) => {
   cornerstoneTools.addToolForElement(element, cornerstoneTools.AngleTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.ArrowAnnotateTool);
   cornerstoneTools.addToolForElement(element, cornerstoneTools.CobbAngleTool);
+  cornerstoneTools.addToolForElement(element, PelvicParameterTool);
   
   // By default, only mouse wheel scrolling is active
   cornerstoneTools.setToolActiveForElement(element, 'StackScrollMouseWheel', {});
