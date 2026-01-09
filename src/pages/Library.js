@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import libraryService from '../services/libraryService';
+import InfoModal from '../components/InfoModal';
+import ShareModal from '../components/ShareModal';
+import UploadModal from '../components/UploadModal';
+import { isDicomFile } from '../services/dicomLoader';
+
 import { 
   Box, 
   Typography, 
@@ -9,19 +17,13 @@ import {
   CircularProgress,
   Tooltip,
 } from '@material-ui/core';
+
 import { 
   Info as InfoIcon, 
   Share as ShareIcon,
   DriveFolderUpload as DriveFolderUploadIcon, 
   Logout as LogoutIcon 
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
-import libraryService from '../services/libraryService';
-import InfoModal from '../components/InfoModal';
-import ShareModal from '../components/ShareModal';
-import UploadModal from '../components/UploadModal';
-import { isDicomFile } from '../services/dicomLoader';
 
 const useStyles = makeStyles((theme) => ({
   root: {

@@ -27,7 +27,8 @@ import {
   mdiTools,
   mdiRuler,
   mdiAngleAcute,
-  mdiCursorDefault
+  mdiCursorDefault,
+  mdiHuman,
 } from '@mdi/js';
 
 import { 
@@ -245,6 +246,7 @@ function ViewerApp() {
       'angle': 'Angle',
       'cobb-angle': 'CobbAngle',
       'text': 'ArrowAnnotate',
+      'pelvic-params': 'PelvicParameter',
     };
     
     const cornerstoneTool = toolMap[toolName];
@@ -253,7 +255,7 @@ function ViewerApp() {
     viewportElements.forEach(element => {
       try {
         // Deactivate all interactive tools (keep scroll active)
-        ['Pan', 'Zoom', 'Wwwc', 'Length', 'Angle', 'CobbAngle', 'ArrowAnnotate'].forEach(tool => {
+        ['Pan', 'Zoom', 'Wwwc', 'Length', 'Angle', 'CobbAngle', 'ArrowAnnotate', 'PelvicParameter'].forEach(tool => {
           try {
             cornerstoneTools.setToolPassiveForElement(element, tool);
           } catch (e) {
@@ -291,6 +293,7 @@ function ViewerApp() {
         'd': 'distance',        // D for distance
         'a': 'angle',           // A for angle
         'c': 'cobb-angle',      // C for cobb angle
+        'v': 'pelvic-params',   // V for pelvic parameters
         't': 'text',            // T for text
       };
 
@@ -691,6 +694,15 @@ function ViewerApp() {
                 onClick={() => handleToolSelect('cobb-angle')}
               >
                 <CobbAngleIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Pelvic Parameters (V)">
+              <IconButton
+                className={activeTool === 'pelvic-params' ? classes.activeToolButton : classes.toolButton}
+                onClick={() => handleToolSelect('pelvic-params')}
+              >
+                <Icon path={mdiHuman} size={1} />
               </IconButton>
             </Tooltip>
 
