@@ -17,7 +17,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import libraryService from '../services/libraryService';
+import dicomStudyService from '../services/dicomStudyService';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -195,12 +195,61 @@ const Library = () => {
   const loadPatients = async () => {
     setIsLoading(true);
     try {
-      const response = await libraryService.listAccessiblePatients();
+      // Fetch all studies from backend API
+      const response = await dicomStudyService.listAllStudies();
+      
       if (response.success) {
-        setPatients(response.data);
+        // Group studies by patient
+        const patientMap = new Map();
+        
+        for (const study of response.data) {
+          const patientId = study.patient_id;
+          
+          if (!patientMap.has(patientId)) {
+            // Create patient entry from study metadata
+            patientMap.set(patientId, {
+              id: patientId,
+              name: study.patient_name || 'Unknown Patient',
+              dob: study.patient_birth_date || 'N/A',
+              phiSummary: {
+                patientId: patientId,
+                sex: study.patient_sex || 'N/A',
+                age: study.patient_age || 'N/A',
+              },
+              metadata: {
+                address: '',
+                phone: '',
+                email: '',
+              },
+              studies: [],
+            });
+          }
+          
+          // Add study to patient
+          const patient = patientMap.get(patientId);
+          patient.studies.push({
+            id: study.study_id,
+            description: study.study_description || 'No Description',
+            date: study.study_date || 'N/A',
+            modality: study.modality || 'N/A',
+            metadata: {
+              studyInstanceUID: study.study_instance_uid,
+              accessionNumber: study.accession_number || 'N/A',
+              referringPhysician: study.referring_physician_name || 'N/A',
+            },
+          });
+        }
+        
+        // Convert map to array
+        const patientsArray = Array.from(patientMap.values());
+        setPatients(patientsArray);
+      } else {
+        console.error('Failed to load studies:', response.error);
+        setPatients([]);
       }
     } catch (error) {
       console.error('Error loading patients:', error);
+      setPatients([]);
     } finally {
       setIsLoading(false);
     }
@@ -212,112 +261,12 @@ const Library = () => {
   };
 
   const handleUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.webkitdirectory = true;
-    input.multiple = true;
-    
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length > 0) {
-        await processUpload(files);
-      }
-    };
-    
-    input.click();
+    // TODO: Implement backend upload in next step
+    alert('Upload functionality will be implemented in the next step');
   };
 
   const processUpload = async (files) => {
-    // Filter DICOM files
-    const dicomFiles = [];
-    for (const file of files) {
-      const isDicom = await isDicomFile(file);
-      if (isDicom) {
-        dicomFiles.push(file);
-      }
-    }
-
-    if (dicomFiles.length === 0) {
-      alert('No DICOM files found in the selected folder.');
-      return;
-    }
-
-    // Show upload modal
-    setUploadModal({
-      open: true,
-      progress: 0,
-      status: 'uploading',
-      message: '',
-    });
-
-    try {
-      // Call upload service with progress callback
-      const result = await libraryService.uploadDicomFolder(
-        dicomFiles,
-        (progress) => {
-          setUploadModal(prev => ({
-            ...prev,
-            progress: progress,
-          }));
-        }
-      );
-
-      if (result.success) {
-        // Set to 100% and show success
-        setUploadModal({
-          open: true,
-          progress: 100,
-          status: 'success',
-          message: `Successfully uploaded ${dicomFiles.length} DICOM file(s)!`,
-        });
-
-        // Refresh patient list after short delay
-        setTimeout(async () => {
-          await loadPatients();
-          // Close modal immediately without showing uploading state
-          setUploadModal({
-            open: false,
-            progress: 0,
-            status: 'success',
-            message: '',
-          });
-        }, 1000);
-      } else {
-        setUploadModal({
-          open: true,
-          progress: 0,
-          status: 'error',
-          message: result.message || 'Upload failed. Please try again.',
-        });
-
-        // Close error modal after delay
-        setTimeout(() => {
-          setUploadModal({
-            open: false,
-            progress: 0,
-            status: 'uploading',
-            message: '',
-          });
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      setUploadModal({
-        open: true,
-        progress: 0,
-        status: 'error',
-        message: 'An error occurred during upload. Please try again.',
-      });
-
-      setTimeout(() => {
-        setUploadModal({
-          open: false,
-          progress: 0,
-          status: 'uploading',
-          message: '',
-        });
-      }, 3000);
-    }
+    // Placeholder - will implement backend upload workflow in next step
   };
 
   const handlePatientClick = (patient) => {
@@ -354,13 +303,13 @@ const Library = () => {
   const handleShare = async (email) => {
     const { type, item } = shareModal;
     
-    if (type === 'patient') {
-      return await libraryService.sharePatient(item.id, email);
-    } else if (type === 'study') {
-      return await libraryService.shareStudy(item.id, email);
-    }
+    // TODO: Implement backend share functionality
+    console.log(`Share ${type} ${item.id} with ${email}`);
     
-    return { success: false, message: 'Invalid share type' };
+    return { 
+      success: true, 
+      message: 'Sharing functionality will be implemented with backend API' 
+    };
   };
 
   // Prepare patient info data for modal
