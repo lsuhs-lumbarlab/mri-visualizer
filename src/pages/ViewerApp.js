@@ -463,16 +463,16 @@ function ViewerApp() {
   };
 
   // Handle back to library
-  const handleBackToLibrary = () => {
-    // Pass the patientId back to Library to restore selection
-    if (location.state?.patientId) {
-      navigate('/library', {
-        state: { patientId: location.state.patientId }
-      });
-    } else {
-      navigate('/library');
-    }
-  };
+  // const handleBackToLibrary = () => {
+  //   // Pass the patientId back to Library to restore selection
+  //   if (location.state?.patientId) {
+  //     navigate('/library', {
+  //       state: { patientId: location.state.patientId }
+  //     });
+  //   } else {
+  //     navigate('/library');
+  //   }
+  // };
 
   if (!isInitialized) {
     return (
@@ -489,14 +489,14 @@ function ViewerApp() {
       {/* Header */}
       <Box className={classes.header}>
         <Box className={classes.headerLeft}>
-          <Tooltip title="Back to Library">
+          {/* <Tooltip title="Back to Library">
             <IconButton 
               className={classes.iconButton}
               onClick={handleBackToLibrary}
             >
               <ArrowBackIcon />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
         </Box>
 
         <Box className={classes.headerRight}>

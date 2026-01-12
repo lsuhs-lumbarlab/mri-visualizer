@@ -1,27 +1,29 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import libraryService from '../services/libraryService';
+import { isDicomFile } from '../services/dicomLoader';
+import InfoModal from '../components/InfoModal';
+import ShareModal from '../components/ShareModal';
+import UploadModal from '../components/UploadModal';
 import { makeStyles } from '@material-ui/core/styles';
-import { 
-  Box, 
-  Typography, 
-  Card, 
+
+import {
+  Box,
+  Typography,
+  Card,
   CardContent,
   IconButton,
   CircularProgress,
   Tooltip,
 } from '@material-ui/core';
-import { 
-  Info as InfoIcon, 
+
+import {
+  Info as InfoIcon,
   Share as ShareIcon,
-  DriveFolderUpload as DriveFolderUploadIcon, 
-  Logout as LogoutIcon 
+  DriveFolderUpload as DriveFolderUploadIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
-import libraryService from '../services/libraryService';
-import InfoModal from '../components/InfoModal';
-import ShareModal from '../components/ShareModal';
-import UploadModal from '../components/UploadModal';
-import { isDicomFile } from '../services/dicomLoader';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -335,10 +337,9 @@ const Library = () => {
   };
 
   const handleStudyClick = (study) => {
-    // Navigate to viewer with studyId AND patientId in state
-    navigate(`/viewer/${study.id}`, {
-      state: { patientId: selectedPatient.id }
-    });
+    // Open viewer in a new tab
+    const viewerUrl = `${window.location.origin}/#/viewer/${study.id}`;
+    window.open(viewerUrl, '_blank');
   };
 
   const handleStudyInfo = (e, study) => {
