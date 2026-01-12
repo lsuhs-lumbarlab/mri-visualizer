@@ -1,6 +1,6 @@
 {
   "name": "mri-visualizer",
-  "homepage": "https://lsuhs-lumbarlab.github.io/mri-visualizer",
+  "homepage": "https://lsuhs-lumbarlab.github.io/mri-visualizer/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

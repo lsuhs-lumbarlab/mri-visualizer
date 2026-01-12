@@ -338,7 +338,8 @@ const Library = () => {
 
   const handleStudyClick = (study) => {
     // Open viewer in a new tab
-    const viewerUrl = `${window.location.origin}/#/viewer/${study.id}`;
+    const base = `${window.location.origin}${process.env.PUBLIC_URL || ''}`;
+    const viewerUrl = `${base}/#/viewer/${study.id}`;
     window.open(viewerUrl, '_blank');
   };
 

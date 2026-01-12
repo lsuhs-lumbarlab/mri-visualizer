@@ -111,11 +111,12 @@ function clearAuthAndRedirect() {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('authUser');
-  
-  // Use hash-based routing for GitHub Pages compatibility
-  const currentHash = window.location.hash;
-  if (!currentHash.includes('#/login')) {
-    window.location.hash = '#/login';
+
+  const base = `${window.location.origin}${process.env.PUBLIC_URL || ''}`;
+  const loginUrl = `${base}/#/login`;
+
+  if (window.location.href !== loginUrl) {
+    window.location.replace(loginUrl);
   }
 }
 
