@@ -229,6 +229,22 @@ const Library = () => {
     });
   }, [patients, patientSearchQuery]);
 
+  // Filtered studies based on search query
+  const filteredStudies = useMemo(() => {
+    if (!selectedPatient) return [];
+    if (!studySearchQuery.trim()) return selectedPatient.studies;
+    
+    const query = studySearchQuery.toLowerCase().trim();
+    return selectedPatient.studies.filter(study => {
+      const description = study.description.toLowerCase();
+      const modality = study.modality.toLowerCase();
+      const studyId = study.metadata.studyID ? study.metadata.studyID.toLowerCase() : '';
+      const accessionNumber = study.metadata.accessionNumber ? study.metadata.accessionNumber.toLowerCase() : '';
+      
+      return description.includes(query) || modality.includes(query) || studyId.includes(query) || accessionNumber.includes(query);
+    });
+  }, [selectedPatient, studySearchQuery]);
+
   const loadPatients = async () => {
     setIsLoading(true);
     try {
@@ -463,7 +479,7 @@ const Library = () => {
               variant="outlined"
               size="small"
               fullWidth
-              placeholder="Search by name, ID, or MRN..."
+              placeholder="Search by name, patient ID, or MRN..."
               value={patientSearchQuery}
               onChange={(e) => setPatientSearchQuery(e.target.value)}
               disabled={isLoading || patients.length === 0}
@@ -568,7 +584,7 @@ const Library = () => {
               variant="outlined"
               size="small"
               fullWidth
-              placeholder="Search by description, modality, or study ID..."
+              placeholder="Search by description, modality, study ID, or accession number..."
               value={studySearchQuery}
               onChange={(e) => setStudySearchQuery(e.target.value)}
               disabled={!selectedPatient || selectedPatient.studies.length === 0}
@@ -599,9 +615,21 @@ const Library = () => {
                 Select a patient to view their studies
               </Typography>
             </Box>
+          ) : selectedPatient.studies.length === 0 ? (
+            <Box className={classes.emptyState}>
+              <Typography variant="body1" className={classes.emptyStateText}>
+                No studies available.
+              </Typography>
+            </Box>
+          ) : filteredStudies.length === 0 ? (
+            <Box className={classes.emptyState}>
+              <Typography variant="body1" className={classes.emptyStateText}>
+                No studies match '{studySearchQuery}'.
+              </Typography>
+            </Box>
           ) : (
             <Box className={classes.scrollableList}>
-              {selectedPatient.studies.map((study) => (
+              {filteredStudies.map((study) => (
                 <Card
                   key={study.id}
                   className={classes.studyCard}
