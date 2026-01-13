@@ -43,7 +43,19 @@ const InfoModal = ({ open, onClose, title, data }) => {
   const classes = useStyles();
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth={false}
+      fullWidth
+      PaperProps={{
+        style: {
+          minWidth: '600px',
+          width: 'auto',
+          maxWidth: '50vw',
+        },
+      }}
+    >
       <DialogTitle disableTypography className={classes.dialogTitle}>
         <Typography variant="h6" className={classes.titleText}>{title}</Typography>
         <IconButton
