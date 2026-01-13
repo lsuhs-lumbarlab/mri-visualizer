@@ -319,13 +319,23 @@ function ViewerApp() {
 
       console.log('Study loaded:', study);
 
+      // Load patient info from patients table
+      const patient = await db.patients.get(study.patientID);
+
+      if (!patient) {
+        console.error('Patient not found for study:', studyInstanceUID);
+        alert('Patient data not found. Please re-upload DICOM files.');
+        navigate('/library');
+        return;
+      }
+
       // Set current study UID for StudyExplorer
       setCurrentStudyUID(studyInstanceUID);
 
       // Load patient info for header display
       setPatientInfo({
-        patientName: formatPatientName(study.patientName) || 'Unknown Patient',
-        dateOfBirth: formatDicomDate(study.patientBirthDate),
+        patientName: formatPatientName(patient.patientName) || 'Unknown Patient',
+        dateOfBirth: formatDicomDate(patient.patientBirthDate),
         studyDate: formatDicomDate(study.studyDate),
         studyTime: formatDicomTime(study.studyTime),
       });

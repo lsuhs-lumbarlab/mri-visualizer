@@ -9,57 +9,58 @@ const libraryService = {
   // Get all patients from IndexedDB
   async listAccessiblePatients() {
     try {
-      // Load all studies from IndexedDB
+      // Load patients and studies from IndexedDB
+      const patients = await db.patients.toArray();
       const studies = await db.studies.toArray();
       
       // Group studies by patient
       const patientMap = new Map();
       
-      for (const study of studies) {
-        const patientId = study.patientID || 'UNKNOWN';
-        
-        if (!patientMap.has(patientId)) {
-          // Create patient entry with properly formatted data
-          patientMap.set(patientId, {
-            id: patientId,
-            name: formatPatientName(study.patientName), // Parse name properly
-            dob: formatDicomDate(study.patientBirthDate), // Format birth date
-            phiSummary: {
-              patientId: patientId,
-              sex: formatSex(study.patientSex), // Format sex/gender
-              age: calculateAge(study.patientBirthDate),
-            },
-            metadata: {
-              // These fields will be empty for now (no mock data)
-              address: '',
-              phone: '',
-              email: '',
-            },
-            studies: [],
-          });
-        }
-        
-        // Add study to patient
-        const patient = patientMap.get(patientId);
-        patient.studies.push({
-          id: study.studyInstanceUID,
-          description: study.studyDescription || 'No Description',
-          date: formatDicomDate(study.studyDate),
-          modality: 'MR', // Default to MR for now
-          metadata: {
-            studyInstanceUID: study.studyInstanceUID,
-            accessionNumber: '', // Will be populated from DICOM
-            referringPhysician: '', // Will be populated from DICOM
+      for (const patient of patients) {
+        // Create patient entry with properly formatted data
+        patientMap.set(patient.patientID, {
+          id: patient.patientID,
+          name: formatPatientName(patient.patientName),
+          dob: formatDicomDate(patient.patientBirthDate),
+          phiSummary: {
+            patientId: patient.patientID,
+            sex: formatSex(patient.patientSex),
+            age: calculateAge(patient.patientBirthDate),
           },
+          metadata: {
+            address: '',
+            phone: '',
+            email: '',
+          },
+          studies: [],
         });
       }
       
+      // Add studies to their respective patients
+      for (const study of studies) {
+        const patient = patientMap.get(study.patientID);
+        
+        if (patient) {
+          patient.studies.push({
+            id: study.studyInstanceUID,
+            description: study.studyDescription || 'No Description',
+            date: formatDicomDate(study.studyDate),
+            modality: 'MR',
+            metadata: {
+              studyInstanceUID: study.studyInstanceUID,
+              accessionNumber: '',
+              referringPhysician: '',
+            },
+          });
+        }
+      }
+      
       // Convert map to array
-      const patients = Array.from(patientMap.values());
+      const patientsArray = Array.from(patientMap.values());
       
       return {
         success: true,
-        data: patients,
+        data: patientsArray,
       };
     } catch (error) {
       console.error('Error loading patients from IndexedDB:', error);

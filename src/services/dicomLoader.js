@@ -125,6 +125,8 @@ const extractMetadata = (dataSet) => {
 
     // Series Information
     seriesInstanceUID: getString('x0020000e'),
+    seriesDate: getString('x00080021'),
+    seriesTime: getString('x00080031'),
     seriesNumber: getString('x00200011'),
     seriesDescription: getString('x0008103e'),
     modality: getString('x00080060'),
@@ -164,22 +166,27 @@ const storeFileData = async (file, metadata, imageId, arrayBuffer) => {
     imageId: imageId,
   });
 
-  // ✅ ADD THIS: Store the DICOM arrayBuffer for persistence
+  // Store the DICOM arrayBuffer for persistence
   await db.images.add({
     sopInstanceUID: metadata.sopInstanceUID,
     imageData: arrayBuffer,
   });
 
-  // Store study
+  // Store patient (use put to avoid duplicates)
+  await db.patients.put({
+    patientID: metadata.patientID,
+    patientName: metadata.patientName,
+    patientBirthDate: metadata.patientBirthDate,
+    patientSex: metadata.patientSex,
+  });
+
+  // Store study (updated to reference patientID only)
   await db.studies.put({
     studyInstanceUID: metadata.studyInstanceUID,
-    patientName: metadata.patientName,
     patientID: metadata.patientID,
     studyDate: metadata.studyDate,
     studyTime: metadata.studyTime,
     studyDescription: metadata.studyDescription,
-    patientBirthDate: metadata.patientBirthDate,
-    patientSex: metadata.patientSex,
   });
 
   // Store series with orientation
@@ -187,6 +194,8 @@ const storeFileData = async (file, metadata, imageId, arrayBuffer) => {
   await db.series.put({
     seriesInstanceUID: metadata.seriesInstanceUID,
     studyInstanceUID: metadata.studyInstanceUID,
+    seriesDate: metadata.seriesDate,
+    seriesTime: metadata.seriesTime,
     seriesNumber: metadata.seriesNumber,
     seriesDescription: metadata.seriesDescription,
     modality: metadata.modality,
@@ -285,6 +294,7 @@ export const clearAllDicomData = async () => {
     await db.files.clear();
     await db.series.clear();
     await db.studies.clear();
+    await db.patients.clear();
     await db.images.clear();
     console.log('All DICOM data cleared from IndexedDB');
   } catch (error) {

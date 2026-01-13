@@ -73,15 +73,19 @@ const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
         return;
       }
 
+      // Load patient data
+      const patientData = await db.patients.get(studyData.patientID);
+
       // Load all series for this study
       const series = await db.series
         .where('studyInstanceUID')
         .equals(uid)
         .toArray();
 
-      // Combine study and series data
+      // Combine study, patient, and series data
       const studyWithSeries = {
         ...studyData,
+        patientName: patientData?.patientName,
         series: series,
       };
 
