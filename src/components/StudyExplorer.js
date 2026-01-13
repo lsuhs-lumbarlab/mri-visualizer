@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Collapse } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import { 
-  ExpandLess as ExpandLessIcon, 
-  ExpandMore as ExpandMoreIcon 
-} from '@mui/icons-material';
 import db from '../database/db';
 import { formatPatientName } from '../utils/patientNameFormatter';
 
@@ -20,6 +16,8 @@ const useStyles = makeStyles((theme) => ({
   studyItem: {
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
+    paddingLeft: theme.spacing(0),
+    paddingRight: theme.spacing(0),
   },
   nested: {
     paddingLeft: theme.spacing(2),
@@ -37,14 +35,15 @@ const useStyles = makeStyles((theme) => ({
   },
   // Custom text sizing for list items
   studyPrimary: {
-    fontSize: '0.875rem',
-    fontWeight: 500,
+    fontSize: '0.9rem',
+    fontWeight: 600,
   },
   studySecondary: {
-    fontSize: '0.875rem',
+    fontSize: '0.9rem',
   },
   seriesPrimary: {
     fontSize: '0.8rem',
+    fontWeight: 500,
   },
   seriesSecondary: {
     fontSize: '0.8rem',
@@ -96,10 +95,6 @@ const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
     }
   };
 
-  const handleStudyClick = () => {
-    setIsOpen(prev => !prev);
-  };
-
   const handleSeriesClick = async (series) => {
     setSelectedSeries((prev) => ({
       ...prev,
@@ -128,20 +123,16 @@ const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
       </Typography>
       <List dense>
         <React.Fragment key={study.studyInstanceUID}>
-          <ListItem 
-            button 
-            onClick={handleStudyClick}
-            className={classes.studyItem}
-          >
+          <ListItem className={classes.studyItem}>
             <ListItemText
               primary={formatPatientName(study.patientName)}
-              secondary={`${study.studyDate || 'No date'} - ${
-                study.studyDescription || 'No description'
-              }`}
+              // secondary={`${study.studyDate || 'No date'} - ${
+              //   study.studyDescription || 'No description'
+              // }`}
+              secondary={`${study.studyDescription || 'No description'}`}
               primaryTypographyProps={{ className: classes.studyPrimary }}
               secondaryTypographyProps={{ className: classes.studySecondary }}
             />
-            {isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </ListItem>
           
           <Collapse in={isOpen} timeout="auto" unmountOnExit>
@@ -166,8 +157,8 @@ const StudyExplorer = ({ studyInstanceUID, onSeriesSelect }) => {
                     onClick={() => handleSeriesClick(series)}
                   >
                     <ListItemText
-                      primary={`${series.orientation} - ${series.seriesDescription || 'No description'}`}
-                      secondary={`Series ${series.seriesNumber || 'N/A'} - ${series.modality || 'N/A'}`}
+                      primary={`${series.seriesDescription || 'No description'}`}
+                      secondary={`${series.orientation}`}
                       primaryTypographyProps={{ className: classes.seriesPrimary }}
                       secondaryTypographyProps={{ className: classes.seriesSecondary }}
                     />
