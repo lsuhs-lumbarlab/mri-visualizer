@@ -34,7 +34,10 @@ import {
   PanTool as PanToolIcon,
   ZoomIn as ZoomInIcon,
   Brightness6 as Brightness6Icon,
-  TextFields as TextFieldsIcon
+  TextFields as TextFieldsIcon,
+  Refresh as RefreshIcon,
+  Undo as UndoIcon,
+  Redo as RedoIcon
 } from '@mui/icons-material';
 
 // Custom COR icon component
@@ -551,6 +554,36 @@ function ViewerApp() {
           {/* Vertical Divider */}
           <Divider orientation="vertical" flexItem className={classes.verticalDivider} />
 
+          <Tooltip title="Reset Image">
+            <IconButton 
+              className={classes.iconButton}
+              // onClick={handleLogout}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Undo">
+            <IconButton 
+              className={classes.iconButton}
+              // onClick={handleLogout}
+            >
+              <UndoIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Redo">
+            <IconButton 
+              className={classes.iconButton}
+              // onClick={handleLogout}
+            >
+              <RedoIcon />
+            </IconButton>
+          </Tooltip>
+
+          {/* Vertical Divider */}
+          <Divider orientation="vertical" flexItem className={classes.verticalDivider} />
+
           {/* Other Control Buttons */}
           <Tooltip title="Toggle Reference Lines">
             <IconButton
@@ -569,6 +602,9 @@ function ViewerApp() {
               <CorIcon />
             </IconButton>
           </Tooltip>
+
+          {/* Vertical Divider */}
+          <Divider orientation="vertical" flexItem className={classes.verticalDivider} />
 
           <Tooltip title="Log Out">
             <IconButton 
