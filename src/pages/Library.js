@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
@@ -16,6 +16,8 @@ import {
   IconButton,
   CircularProgress,
   Tooltip,
+  TextField,
+  InputAdornment,
 } from '@material-ui/core';
 
 import {
@@ -23,6 +25,8 @@ import {
   Share as ShareIcon,
   DriveFolderUpload as DriveFolderUploadIcon,
   Logout as LogoutIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 
 const useStyles = makeStyles((theme) => ({
@@ -142,6 +146,14 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'center',
     height: '100%',
   },
+  searchContainer: {
+    padding: theme.spacing(2, 2, 0),
+  },
+  searchField: {
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+  },
 }));
 
 const Library = () => {
@@ -153,6 +165,10 @@ const Library = () => {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Search states
+  const [patientSearchQuery, setPatientSearchQuery] = useState('');
+  const [studySearchQuery, setStudySearchQuery] = useState('');
   
   // Modal states
   const [patientInfoModal, setPatientInfoModal] = useState({
@@ -193,6 +209,25 @@ const Library = () => {
       }
     }
   }, [location.state, patients]);
+
+  // Clear study search when selected patient changes
+  useEffect(() => {
+    setStudySearchQuery('');
+  }, [selectedPatient]);
+
+  // Filtered patients based on search query
+  const filteredPatients = useMemo(() => {
+    if (!patientSearchQuery.trim()) return patients;
+    
+    const query = patientSearchQuery.toLowerCase().trim();
+    return patients.filter(patient => {
+      const name = patient.name.toLowerCase();
+      const patientId = patient.phiSummary.patientId.toLowerCase();
+      const mrn = patient.metadata.mrn ? patient.metadata.mrn.toLowerCase() : '';
+      
+      return name.includes(query) || patientId.includes(query) || mrn.includes(query);
+    });
+  }, [patients, patientSearchQuery]);
 
   const loadPatients = async () => {
     setIsLoading(true);
@@ -422,6 +457,37 @@ const Library = () => {
             Patients
           </Typography>
           
+          <Box className={classes.searchContainer}>
+            <TextField
+              className={classes.searchField}
+              variant="outlined"
+              size="small"
+              fullWidth
+              placeholder="Search by name, ID, or MRN..."
+              value={patientSearchQuery}
+              onChange={(e) => setPatientSearchQuery(e.target.value)}
+              disabled={isLoading || patients.length === 0}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: patientSearchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setPatientSearchQuery('')}
+                      edge="end"
+                    >
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+          
           {isLoading ? (
             <Box className={classes.loadingContainer}>
               <CircularProgress />
@@ -432,9 +498,15 @@ const Library = () => {
                 No DICOM studies available yet. Click 'Upload' to add your first study.
               </Typography>
             </Box>
+          ) : filteredPatients.length === 0 ? (
+            <Box className={classes.emptyState}>
+              <Typography variant="body1" className={classes.emptyStateText}>
+                No patients match '{patientSearchQuery}'.
+              </Typography>
+            </Box>
           ) : (
             <Box className={classes.scrollableList}>
-              {patients.map((patient) => (
+              {filteredPatients.map((patient) => (
                 <Card
                   key={patient.id}
                   className={`${classes.patientCard} ${
@@ -489,6 +561,37 @@ const Library = () => {
           <Typography variant="h6" className={classes.paneTitle}>
             Studies
           </Typography>
+          
+          <Box className={classes.searchContainer}>
+            <TextField
+              className={classes.searchField}
+              variant="outlined"
+              size="small"
+              fullWidth
+              placeholder="Search by description, modality, or study ID..."
+              value={studySearchQuery}
+              onChange={(e) => setStudySearchQuery(e.target.value)}
+              disabled={!selectedPatient || selectedPatient.studies.length === 0}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: studySearchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setStudySearchQuery('')}
+                      edge="end"
+                    >
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
           
           {!selectedPatient ? (
             <Box className={classes.emptyState}>
