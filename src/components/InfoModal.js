@@ -31,7 +31,7 @@ const useStyles = makeStyles((theme) => ({
   },
   label: {
     fontWeight: 600,
-    minWidth: 150,
+    minWidth: 160,
     color: theme.palette.text.secondary,
   },
   value: {
