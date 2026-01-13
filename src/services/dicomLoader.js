@@ -122,6 +122,9 @@ const extractMetadata = (dataSet) => {
     studyDate: getString('x00080020'),
     studyTime: getString('x00080030'),
     studyDescription: getString('x00081030'),
+    studyID: getString('x00200010'),
+    accessionNumber: getString('x00080050'),
+    institutionName: getString('x00080080'),
 
     // Series Information
     seriesInstanceUID: getString('x0020000e'),
@@ -187,6 +190,10 @@ const storeFileData = async (file, metadata, imageId, arrayBuffer) => {
     studyDate: metadata.studyDate,
     studyTime: metadata.studyTime,
     studyDescription: metadata.studyDescription,
+    studyID: metadata.studyID,
+    modality: metadata.modality,
+    accessionNumber: metadata.accessionNumber,
+    institutionName: metadata.institutionName,
   });
 
   // Store series with orientation

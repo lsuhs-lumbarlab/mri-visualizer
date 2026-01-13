@@ -3,7 +3,7 @@
 import db from '../database/db';
 import { loadDicomFile } from './dicomLoader';
 import { formatPatientName } from '../utils/patientNameFormatter';
-import { formatDicomDate, calculateAge } from '../utils/dateTimeFormatter';
+import { formatDicomDate, formatDicomTime, calculateAge } from '../utils/dateTimeFormatter';
 
 const libraryService = {
   // Get all patients from IndexedDB
@@ -28,9 +28,7 @@ const libraryService = {
             age: calculateAge(patient.patientBirthDate),
           },
           metadata: {
-            address: '',
-            phone: '',
-            email: '',
+            mrn: '',
           },
           studies: [],
         });
@@ -45,11 +43,13 @@ const libraryService = {
             id: study.studyInstanceUID,
             description: study.studyDescription || 'No Description',
             date: formatDicomDate(study.studyDate),
-            modality: 'MR',
+            time: formatDicomTime(study.studyTime),
+            modality: study.modality || 'MR',
             metadata: {
               studyInstanceUID: study.studyInstanceUID,
-              accessionNumber: '',
-              referringPhysician: '',
+              studyID: study.studyID || '',
+              accessionNumber: study.accessionNumber || '',
+              institutionName: study.institutionName || '',
             },
           });
         }

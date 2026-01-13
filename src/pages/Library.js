@@ -374,9 +374,7 @@ const Library = () => {
       'Patient ID': patient.phiSummary.patientId,
       'Sex': patient.phiSummary.sex,
       'Age': patient.phiSummary.age ? patient.phiSummary.age : 'N/A',
-      'Address': patient.metadata.address || 'N/A',
-      'Phone': patient.metadata.phone || 'N/A',
-      'Email': patient.metadata.email || 'N/A',
+      'MRN': patient.metadata.mrn || 'N/A',
     };
   };
 
@@ -386,10 +384,11 @@ const Library = () => {
     return {
       'Description': study.description,
       'Study Date': study.date,
+      'Study Time': study.time || 'N/A',
       'Modality': study.modality,
-      'Accession Number': study.metadata.accessionNumber,
-      'Study Instance UID': study.metadata.studyInstanceUID,
-      'Referring Physician': study.metadata.referringPhysician,
+      'Study ID': study.metadata.studyID || 'N/A',
+      'Accession Number': study.metadata.accessionNumber || 'N/A',
+      'Institution Name': study.metadata.institutionName || 'N/A',
     };
   };
 
@@ -453,7 +452,7 @@ const Library = () => {
                           DOB: {patient.dob}
                         </Typography>
                         <Typography className={classes.phiInfo}>
-                          MRN: {patient.phiSummary.patientId}
+                          Patient ID: {patient.phiSummary.patientId}
                         </Typography>
                         <Typography className={classes.phiInfo}>
                           {patient.phiSummary.sex} • {patient.phiSummary.age ? patient.phiSummary.age : 'N/A'}
@@ -518,7 +517,7 @@ const Library = () => {
                           Modality: {study.modality}
                         </Typography>
                         <Typography className={classes.studyInfo}>
-                          Accession: {study.metadata.accessionNumber}
+                          Accession Number: {study.metadata.accessionNumber}
                         </Typography>
                       </Box>
                       <Box className={classes.cardActions}>
