@@ -216,6 +216,7 @@ const Library = () => {
   }, [selectedPatient]);
 
   // Filtered patients based on search query
+  // Searches: patient name, patient ID, and MRN (case-insensitive)
   const filteredPatients = useMemo(() => {
     if (!patientSearchQuery.trim()) return patients;
     
@@ -230,6 +231,8 @@ const Library = () => {
   }, [patients, patientSearchQuery]);
 
   // Filtered studies based on search query
+  // Searches: description, modality, study ID, and accession number (case-insensitive)
+  // Note: Study search is automatically cleared when selectedPatient changes (see useEffect above)
   const filteredStudies = useMemo(() => {
     if (!selectedPatient) return [];
     if (!studySearchQuery.trim()) return selectedPatient.studies;
@@ -474,6 +477,7 @@ const Library = () => {
           </Typography>
           
           <Box className={classes.searchContainer}>
+            {/* Patient search - disabled when loading or no patients exist */}
             <TextField
               className={classes.searchField}
               variant="outlined"
@@ -579,6 +583,7 @@ const Library = () => {
           </Typography>
           
           <Box className={classes.searchContainer}>
+            {/* Study search - disabled when no patient selected or selected patient has no studies */}
             <TextField
               className={classes.searchField}
               variant="outlined"
