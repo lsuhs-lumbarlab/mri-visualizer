@@ -176,13 +176,11 @@ function ViewerApp() {
   const [patientInfo, setPatientInfo] = useState({
     patientName: '',
     dateOfBirth: '',
-    studyDate: '',
-    studyTime: '',
   });
   const [viewportData, setViewportData] = useState({
-    sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-    axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
-    coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
+    sagittal: { imageIds: [], seriesDescription: '', currentImageIndex: 0, seriesDate: '', seriesTime: '' },
+    axial: { imageIds: [], seriesDescription: '', currentImageIndex: 0, seriesDate: '', seriesTime: '' },
+    coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0, seriesDate: '', seriesTime: '' },
   });
   const [coronalVisible, setCoronalVisible] = useState(false);
   const [activeTool, setActiveTool] = useState('no-tool');
@@ -336,8 +334,6 @@ function ViewerApp() {
       setPatientInfo({
         patientName: formatPatientName(patient.patientName) || 'Unknown Patient',
         dateOfBirth: formatDicomDate(patient.patientBirthDate),
-        studyDate: formatDicomDate(study.studyDate),
-        studyTime: formatDicomTime(study.studyTime),
       });
 
       setStudyLoaded(true);
@@ -368,6 +364,8 @@ function ViewerApp() {
           imageIds: imageIds,
           seriesDescription: series.seriesDescription,
           currentImageIndex: 0,
+          seriesDate: formatDicomDate(series.seriesDate),
+          seriesTime: formatDicomTime(series.seriesTime),
         },
       }));
     } catch (error) {
@@ -660,8 +658,8 @@ function ViewerApp() {
             activeViewport={activeViewport}
             patientName={patientInfo.patientName}
             dateOfBirth={patientInfo.dateOfBirth}
-            studyDate={patientInfo.studyDate}
-            studyTime={patientInfo.studyTime}
+            seriesDate={viewportData.sagittal.seriesDate}
+            seriesTime={viewportData.sagittal.seriesTime}
           />
           <CornerstoneViewport
             key={`axial-${viewportKey}`}
@@ -678,8 +676,8 @@ function ViewerApp() {
             activeViewport={activeViewport}
             patientName={patientInfo.patientName}
             dateOfBirth={patientInfo.dateOfBirth}
-            studyDate={patientInfo.studyDate}
-            studyTime={patientInfo.studyTime}
+            seriesDate={viewportData.axial.seriesDate}
+            seriesTime={viewportData.axial.seriesTime}
           />
           {coronalVisible && (  // Conditionally render coronal viewport
             <CornerstoneViewport
@@ -697,8 +695,8 @@ function ViewerApp() {
               activeViewport={activeViewport}
               patientName={patientInfo.patientName}
               dateOfBirth={patientInfo.dateOfBirth}
-              studyDate={patientInfo.studyDate}
-              studyTime={patientInfo.studyTime}
+              seriesDate={viewportData.coronal.seriesDate}
+              seriesTime={viewportData.coronal.seriesTime}
             />
           )}
         </Box>

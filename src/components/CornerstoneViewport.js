@@ -161,8 +161,8 @@ const CornerstoneViewport = forwardRef(({
   activeViewport = null,
   patientName = '',
   dateOfBirth = '',
-  studyDate = '',
-  studyTime = '',
+  seriesDate = '',
+  seriesTime = '',
 }, ref) => {
   const classes = useStyles();
   const viewportRef = useRef(null);
@@ -563,7 +563,7 @@ const CornerstoneViewport = forwardRef(({
         <Box className={`${classes.overlay} ${classes.topLeft}`}>
           <div>{patientName}</div>
           <div>DOB: {dateOfBirth}</div>
-          <div>{studyDate} {studyTime}</div>
+          <div>{seriesDate} {seriesTime}</div>
         </Box>
         
         <Box className={`${classes.overlay} ${classes.bottomRight}`}>
