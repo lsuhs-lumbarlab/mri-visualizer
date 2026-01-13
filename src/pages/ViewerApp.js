@@ -18,13 +18,11 @@ import {
   CircularProgress, 
   IconButton, 
   Tooltip,
-  Popover,
-  Paper
+  Divider
 } from '@material-ui/core';
 
 import {
   mdiArrowSplitHorizontal,
-  mdiTools,
   mdiRuler,
   mdiAngleAcute,
   mdiCursorDefault
@@ -124,10 +122,9 @@ const useStyles = makeStyles((theme) => ({
   },
   activeButton: {
     color: theme.palette.primary.main,
-    // backgroundColor: theme.palette.action.selected,
   },
-  activeToolsButton: {
-    color: theme.palette.text.primary,
+  activeToolButton: {
+    color: theme.palette.primary.main,
     backgroundColor: theme.palette.action.selected,
   },
   content: {
@@ -153,21 +150,10 @@ const useStyles = makeStyles((theme) => ({
     gap: theme.spacing(1),
     minWidth: 0,
   },
-  toolsPanel: {
-    padding: theme.spacing(1),
-    border: `1px solid ${theme.palette.divider}`,
-  },
-  toolsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: theme.spacing(1),
-  },
-  toolButton: {
-    color: theme.palette.text.primary,
-  },
-  activeToolButton: {
-    color: theme.palette.primary.main,
-    backgroundColor: theme.palette.action.selected,
+  verticalDivider: {
+    alignSelf: 'stretch',
+    // margin: theme.spacing(0, 1),
+    backgroundColor: theme.palette.divider,
   },
 }));
 
@@ -196,7 +182,6 @@ function ViewerApp() {
     coronal: { imageIds: [], seriesDescription: '', currentImageIndex: 0 },
   });
   const [coronalVisible, setCoronalVisible] = useState(false);
-  const [toolsAnchorEl, setToolsAnchorEl] = useState(null);
   const [activeTool, setActiveTool] = useState('no-tool');
 
   // Store references to viewport components
@@ -271,7 +256,6 @@ function ViewerApp() {
     });
     
     setActiveTool(toolName);
-    setToolsAnchorEl(null); // Close tools menu
   }, []);
 
   // Keyboard shortcuts for tool selection
@@ -453,15 +437,6 @@ function ViewerApp() {
     await logout();
   };
 
-  // Handle tools panel
-  const handleToolsClick = (event) => {
-    setToolsAnchorEl(event.currentTarget);
-  };
-
-  const handleToolsClose = () => {
-    setToolsAnchorEl(null);
-  };
-
   // Handle back to library
   // const handleBackToLibrary = () => {
   //   // Pass the patientId back to Library to restore selection
@@ -500,15 +475,83 @@ function ViewerApp() {
         </Box>
 
         <Box className={classes.headerRight}>
-          <Tooltip title="Tools">
+          {/* Tool Buttons */}
+          <Tooltip title="No Tool (ESC)">
             <IconButton
-              className={Boolean(toolsAnchorEl) ? classes.activeToolsButton : classes.iconButton}
-              onClick={handleToolsClick}
+              className={activeTool === 'no-tool' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('no-tool')}
             >
-              <Icon path={mdiTools} size={1} />
+              <Icon path={mdiCursorDefault} size={1} />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Pan (P)">
+            <IconButton
+              className={activeTool === 'pan' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('pan')}
+            >
+              <PanToolIcon />
             </IconButton>
           </Tooltip>
 
+          <Tooltip title="Zoom (Z)">
+            <IconButton
+              className={activeTool === 'zoom' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('zoom')}
+            >
+              <ZoomInIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="WL/WW (W)">
+            <IconButton
+              className={activeTool === 'wl/ww' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('wl/ww')}
+            >
+              <Brightness6Icon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Distance (D)">
+            <IconButton
+              className={activeTool === 'distance' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('distance')}
+            >
+              <Icon path={mdiRuler} size={1} />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Angle (A)">
+            <IconButton
+              className={activeTool === 'angle' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('angle')}
+            >
+              <Icon path={mdiAngleAcute} size={1} />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Cobb Angle (C)">
+            <IconButton
+              className={activeTool === 'cobb-angle' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('cobb-angle')}
+            >
+              <CobbAngleIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Text (T)">
+            <IconButton
+              className={activeTool === 'text' ? classes.activeToolButton : classes.iconButton}
+              onClick={() => handleToolSelect('text')}
+            >
+              <TextFieldsIcon />
+            </IconButton>
+          </Tooltip>
+
+          {/* Vertical Divider */}
+          <Divider orientation="vertical" flexItem className={classes.verticalDivider} />
+
+          {/* Other Control Buttons */}
           <Tooltip title="Toggle Reference Lines">
             <IconButton
               className={referenceLinesEnabled ? classes.activeButton : classes.iconButton}
@@ -614,97 +657,6 @@ function ViewerApp() {
           )}
         </Box>
       </Box>
-
-      {/* Tools Panel */}
-      <Popover
-        open={Boolean(toolsAnchorEl)}
-        anchorEl={toolsAnchorEl}
-        onClose={handleToolsClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-      >
-        <Paper className={classes.toolsPanel}>
-          <Box className={classes.toolsGrid}>
-            <Tooltip title="No Tool (ESC)">
-              <IconButton
-                className={activeTool === 'no-tool' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('no-tool')}
-              >
-                <Icon path={mdiCursorDefault} size={1} />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Pan (P)">
-              <IconButton
-                className={activeTool === 'pan' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('pan')}
-              >
-                <PanToolIcon />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Zoom (Z)">
-              <IconButton
-                className={activeTool === 'zoom' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('zoom')}
-              >
-                <ZoomInIcon />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="WL/WW (W)">
-              <IconButton
-                className={activeTool === 'wl/ww' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('wl/ww')}
-              >
-                <Brightness6Icon />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Distance (D)">
-              <IconButton
-                className={activeTool === 'distance' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('distance')}
-              >
-                <Icon path={mdiRuler} size={1} />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Angle (A)">
-              <IconButton
-                className={activeTool === 'angle' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('angle')}
-              >
-                <Icon path={mdiAngleAcute} size={1} />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Cobb Angle (C)">
-              <IconButton
-                className={activeTool === 'cobb-angle' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('cobb-angle')}
-              >
-                <CobbAngleIcon />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Text (T)">
-              <IconButton
-                className={activeTool === 'text' ? classes.activeToolButton : classes.toolButton}
-                onClick={() => handleToolSelect('text')}
-              >
-                <TextFieldsIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Paper>
-      </Popover>
     </Box>
   );
 }
