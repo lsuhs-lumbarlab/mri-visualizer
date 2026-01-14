@@ -629,7 +629,7 @@ const Library = () => {
           ) : filteredStudies.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
-                No studies match '{studySearchQuery}'.
+                No studies match your search.
               </Typography>
             </Box>
           ) : (
