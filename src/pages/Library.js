@@ -521,7 +521,7 @@ const Library = () => {
           ) : filteredPatients.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
-                No patients match '{patientSearchQuery}'.
+                No patients match your search.
               </Typography>
             </Box>
           ) : (
