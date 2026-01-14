@@ -7,6 +7,7 @@ import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
 import { makeStyles } from '@material-ui/core/styles';
+import { sortPatients } from '../utils/sortHelpers';
 
 import {
   Box,
@@ -18,6 +19,9 @@ import {
   Tooltip,
   TextField,
   InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
 } from '@material-ui/core';
 
 import {
@@ -27,6 +31,8 @@ import {
   Logout as LogoutIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
 } from '@mui/icons-material';
 
 const useStyles = makeStyles((theme) => ({
@@ -154,6 +160,26 @@ const useStyles = makeStyles((theme) => ({
       backgroundColor: theme.palette.background.default,
     },
   },
+  sortContainer: {
+    padding: theme.spacing(1.5, 2, 0),
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  sortLabel: {
+    color: theme.palette.text.secondary,
+    fontSize: '0.875rem',
+    whiteSpace: 'nowrap',
+  },
+  sortSelect: {
+    width: 150,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+  },
+  directionButton: {
+    padding: theme.spacing(0.5),
+  },
 }));
 
 const Library = () => {
@@ -169,6 +195,12 @@ const Library = () => {
   // Search states
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
   const [studySearchQuery, setStudySearchQuery] = useState('');
+  
+  // Sort states
+  const [patientSort, setPatientSort] = useState({
+    key: 'name', // 'name' | 'dob'
+    direction: 'asc' // 'asc' | 'desc'
+  });
   
   // Modal states
   const [patientInfoModal, setPatientInfoModal] = useState({
@@ -215,20 +247,26 @@ const Library = () => {
     setStudySearchQuery('');
   }, [selectedPatient]);
 
-  // Filtered patients based on search query
-  // Searches: patient name, patient ID, and MRN (case-insensitive)
-  const filteredPatients = useMemo(() => {
-    if (!patientSearchQuery.trim()) return patients;
+  // Filtered and sorted patients
+  // Pipeline: filter by search → sort
+  const sortedPatients = useMemo(() => {
+    // Step 1: Filter by search query
+    let filtered = patients;
     
-    const query = patientSearchQuery.toLowerCase().trim();
-    return patients.filter(patient => {
-      const name = patient.name.toLowerCase();
-      const patientId = patient.phiSummary.patientId.toLowerCase();
-      const mrn = patient.metadata.mrn ? patient.metadata.mrn.toLowerCase() : '';
-      
-      return name.includes(query) || patientId.includes(query) || mrn.includes(query);
-    });
-  }, [patients, patientSearchQuery]);
+    if (patientSearchQuery.trim()) {
+      const query = patientSearchQuery.toLowerCase().trim();
+      filtered = patients.filter(patient => {
+        const name = patient.name.toLowerCase();
+        const patientId = patient.phiSummary.patientId.toLowerCase();
+        const mrn = patient.metadata.mrn ? patient.metadata.mrn.toLowerCase() : '';
+        
+        return name.includes(query) || patientId.includes(query) || mrn.includes(query);
+      });
+    }
+    
+    // Step 2: Sort
+    return sortPatients(filtered, patientSort);
+  }, [patients, patientSearchQuery, patientSort]);
 
   // Filtered studies based on search query
   // Searches: description, modality, study ID, and accession number (case-insensitive)
@@ -508,6 +546,35 @@ const Library = () => {
             />
           </Box>
           
+          {/* Patient sort controls */}
+          <Box className={classes.sortContainer}>
+            <Typography className={classes.sortLabel}>Sort by:</Typography>
+            <FormControl size="small" className={classes.sortSelect}>
+              <Select
+                value={patientSort.key}
+                onChange={(e) => setPatientSort({ ...patientSort, key: e.target.value })}
+                disabled={isLoading || patients.length === 0}
+                variant="outlined"
+              >
+                <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="dob">Date of Birth</MenuItem>
+              </Select>
+            </FormControl>
+            <Tooltip title={patientSort.direction === 'asc' ? 'Ascending' : 'Descending'}>
+              <IconButton
+                className={classes.directionButton}
+                onClick={() => setPatientSort({ 
+                  ...patientSort, 
+                  direction: patientSort.direction === 'asc' ? 'desc' : 'asc' 
+                })}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+              >
+                {patientSort.direction === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+          
           {isLoading ? (
             <Box className={classes.loadingContainer}>
               <CircularProgress />
@@ -518,7 +585,7 @@ const Library = () => {
                 No DICOM studies available yet. Click 'Upload' to add your first study.
               </Typography>
             </Box>
-          ) : filteredPatients.length === 0 ? (
+          ) : sortedPatients.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
                 No patients match your search.
@@ -526,7 +593,7 @@ const Library = () => {
             </Box>
           ) : (
             <Box className={classes.scrollableList}>
-              {filteredPatients.map((patient) => (
+              {sortedPatients.map((patient) => (
                 <Card
                   key={patient.id}
                   className={`${classes.patientCard} ${
