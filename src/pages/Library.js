@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
 import { isDicomFile } from '../services/dicomLoader';
 import { sortPatients } from '../utils/sortHelpers';
+import { filterPatientsByDobYear } from '../utils/filterHelpers';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -168,8 +169,44 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(1.5, 2, 0),
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: theme.spacing(1),
     flexWrap: 'wrap',
+  },
+  sortLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  filterRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  filterLabel: {
+    color: theme.palette.text.secondary,
+    fontSize: '0.875rem',
+    whiteSpace: 'nowrap',
+  },
+  filterInput: {
+    width: 80,
+    '& input': {
+      padding: theme.spacing(0.75, 1),
+      fontSize: '0.875rem',
+    },
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+  },
+  filterToText: {
+    color: theme.palette.text.secondary,
+    fontSize: '0.875rem',
+  },
+  filterButton: {
+    fontSize: '0.75rem',
+    padding: theme.spacing(0.5, 1),
+    minWidth: 'auto',
+    textTransform: 'none',
   },
   sortLabel: {
     color: theme.palette.text.secondary,
@@ -220,6 +257,16 @@ const Library = () => {
     direction: 'asc' // 'asc' | 'desc'
   });
   
+  // Filter states
+  const [patientFilters, setPatientFilters] = useState({
+    dobYearFrom: null,
+    dobYearTo: null,
+  });
+  
+  // Temporary filter inputs (before Apply)
+  const [tempDobFrom, setTempDobFrom] = useState('');
+  const [tempDobTo, setTempDobTo] = useState('');
+  
   // Modal states
   const [patientInfoModal, setPatientInfoModal] = useState({
     open: false,
@@ -266,14 +313,15 @@ const Library = () => {
   }, [selectedPatient]);
 
   // Filtered and sorted patients
-  // Pipeline: filter by search → sort
+  // Pipeline: filter by DOB → filter by search → sort
   const sortedPatients = useMemo(() => {
-    // Step 1: Filter by search query
-    let filtered = patients;
+    // Step 1: Filter by DOB year range
+    let filtered = filterPatientsByDobYear(patients, patientFilters);
     
+    // Step 2: Filter by search query
     if (patientSearchQuery.trim()) {
       const query = patientSearchQuery.toLowerCase().trim();
-      filtered = patients.filter(patient => {
+      filtered = filtered.filter(patient => {
         const name = patient.name.toLowerCase();
         const patientId = patient.phiSummary.patientId.toLowerCase();
         const mrn = patient.metadata.mrn ? patient.metadata.mrn.toLowerCase() : '';
@@ -282,9 +330,9 @@ const Library = () => {
       });
     }
     
-    // Step 2: Sort
+    // Step 3: Sort
     return sortPatients(filtered, patientSort);
-  }, [patients, patientSearchQuery, patientSort]);
+  }, [patients, patientFilters, patientSearchQuery, patientSort]);
 
   // Filtered studies based on search query
   // Searches: description, modality, study ID, and accession number (case-insensitive)
@@ -432,6 +480,32 @@ const Library = () => {
     }
   };
 
+  const handleApplyDobFilter = () => {
+    let fromYear = tempDobFrom ? parseInt(tempDobFrom) : null;
+    let toYear = tempDobTo ? parseInt(tempDobTo) : null;
+    
+    // Auto-swap if from >= to
+    if (fromYear !== null && toYear !== null && fromYear > toYear) {
+      [fromYear, toYear] = [toYear, fromYear];
+      setTempDobFrom(fromYear.toString());
+      setTempDobTo(toYear.toString());
+    }
+    
+    setPatientFilters({
+      dobYearFrom: fromYear,
+      dobYearTo: toYear,
+    });
+  };
+  
+  const handleClearDobFilter = () => {
+    setTempDobFrom('');
+    setTempDobTo('');
+    setPatientFilters({
+      dobYearFrom: null,
+      dobYearTo: null,
+    });
+  };
+  
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
   };
@@ -564,57 +638,113 @@ const Library = () => {
             />
           </Box>
           
-          {/* Patient sort controls */}
+          {/* Patient sort and filter controls */}
           <Box className={classes.sortContainer}>
-            <Typography className={classes.sortLabel}>Sort by:</Typography>
-            <Button
-              className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-              onClick={() => setPatientSort({ key: 'name', direction: 'asc' })}
-              disabled={isLoading || patients.length === 0}
-              size="small"
-              variant="outlined"
-            >
-              Name
-              <span className={classes.sortIcon}>
-                <Icon path={mdiSortAlphabeticalAscending} size={1}/>
-              </span>
-            </Button>
-            <Button
-              className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-              onClick={() => setPatientSort({ key: 'name', direction: 'desc' })}
-              disabled={isLoading || patients.length === 0}
-              size="small"
-              variant="outlined"
-            >
-              Name
-              <span className={classes.sortIcon}>
-                <Icon path={mdiSortAlphabeticalDescending} size={1.0}/>
-              </span>
-            </Button>
-            <Button
-              className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-              onClick={() => setPatientSort({ key: 'dob', direction: 'asc' })}
-              disabled={isLoading || patients.length === 0}
-              size="small"
-              variant="outlined"
-            >
-              DOB
-              <span className={classes.sortIcon}>
-                <Icon path={mdiSortNumericAscending} size={1}/>
-              </span>
-            </Button>
-            <Button
-              className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-              onClick={() => setPatientSort({ key: 'dob', direction: 'desc' })}
-              disabled={isLoading || patients.length === 0}
-              size="small"
-              variant="outlined"
-            >
-              DOB
-              <span className={classes.sortIcon}>
-                <Icon path={mdiSortNumericDescending} size={1}/>
-              </span>
-            </Button>
+            {/* Left side - Sort controls */}
+            <Box className={classes.sortLeft}>
+              <Typography className={classes.sortLabel}>Sort by:</Typography>
+              <Button
+                className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                onClick={() => setPatientSort({ key: 'name', direction: 'asc' })}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                Name
+                <span className={classes.sortIcon}>
+                  <Icon path={mdiSortAlphabeticalAscending} size={1}/>
+                </span>
+              </Button>
+              <Button
+                className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                onClick={() => setPatientSort({ key: 'name', direction: 'desc' })}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                Name
+                <span className={classes.sortIcon}>
+                  <Icon path={mdiSortAlphabeticalDescending} size={1.0}/>
+                </span>
+              </Button>
+              <Button
+                className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                onClick={() => setPatientSort({ key: 'dob', direction: 'asc' })}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                DOB
+                <span className={classes.sortIcon}>
+                  <Icon path={mdiSortNumericAscending} size={1}/>
+                </span>
+              </Button>
+              <Button
+                className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                onClick={() => setPatientSort({ key: 'dob', direction: 'desc' })}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                DOB
+                <span className={classes.sortIcon}>
+                  <Icon path={mdiSortNumericDescending} size={1}/>
+                </span>
+              </Button>
+            </Box>
+            
+            {/* Right side - DOB Filter */}
+            <Box className={classes.filterRight}>
+              <Typography className={classes.filterLabel}>Date of Birth:</Typography>
+              <TextField
+                className={classes.filterInput}
+                variant="outlined"
+                size="small"
+                type="number"
+                placeholder="Min Year"
+                value={tempDobFrom}
+                onChange={(e) => setTempDobFrom(e.target.value)}
+                disabled={isLoading || patients.length === 0}
+                inputProps={{
+                  min: 1900,
+                  max: new Date().getFullYear(),
+                }}
+              />
+              <Typography className={classes.filterToText}>to</Typography>
+              <TextField
+                className={classes.filterInput}
+                variant="outlined"
+                size="small"
+                type="number"
+                placeholder="Max Year"
+                value={tempDobTo}
+                onChange={(e) => setTempDobTo(e.target.value)}
+                disabled={isLoading || patients.length === 0}
+                inputProps={{
+                  min: 1900,
+                  max: new Date().getFullYear(),
+                }}
+              />
+              <Button
+                className={classes.filterButton}
+                onClick={handleApplyDobFilter}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+                variant="contained"
+                color="primary"
+              >
+                Apply
+              </Button>
+              <Button
+                className={classes.filterButton}
+                onClick={handleClearDobFilter}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                Clear
+              </Button>
+            </Box>
           </Box>
           
           {isLoading ? (
@@ -630,7 +760,7 @@ const Library = () => {
           ) : sortedPatients.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
-                No patients match your search.
+                No results match your current search and filters.
               </Typography>
             </Box>
           ) : (
