@@ -4,19 +4,21 @@
  */
 
 /**
- * Parse DICOM date (YYYYMMDD) to a comparable number
- * @param {string} dicomDate - Date in DICOM format or formatted display string
- * @returns {number} Comparable number (0 if invalid)
+ * Parse formatted DOB string to a comparable Date object
+ * @param {string} dob - Formatted DOB (e.g., "Jan 15, 1980" or "Unknown")
+ * @returns {Date|null} Date object or null if invalid
  */
-const parseDicomDate = (dicomDate) => {
-  if (!dicomDate || dicomDate === 'Unknown') return 0;
+const parseDobToDate = (dob) => {
+  if (!dob || dob === 'Unknown') return null;
   
-  // Try to parse as YYYYMMDD
-  if (typeof dicomDate === 'string' && /^\d{8}$/.test(dicomDate)) {
-    return parseInt(dicomDate);
+  try {
+    // Parse "Mmm DD, YYYY" format
+    const date = new Date(dob);
+    if (isNaN(date.getTime())) return null;
+    return date;
+  } catch {
+    return null;
   }
-  
-  return 0;
 };
 
 /**
@@ -50,14 +52,17 @@ export const sortPatientsByName = (patients, direction = 'asc') => {
       return compareValues(nameA, nameB, direction);
     }
     
-    // Tie-breaker 1: DOB (raw DICOM date from phiSummary)
-    // Note: We'll need to add rawDob to patient object or extract from formatted dob
-    // For now, compare formatted dob strings
-    const dobA = a.dob || '';
-    const dobB = b.dob || '';
+    // Tie-breaker 1: DOB (parse to Date for proper comparison)
+    const dobDateA = parseDobToDate(a.dob);
+    const dobDateB = parseDobToDate(b.dob);
     
-    if (dobA !== dobB) {
-      return compareValues(dobA, dobB, 'asc'); // Fixed order for tie-breaker
+    if (dobDateA && dobDateB) {
+      const comparison = dobDateA.getTime() - dobDateB.getTime();
+      if (comparison !== 0) return comparison < 0 ? -1 : 1;
+    } else if (dobDateA) {
+      return -1; // A has valid date, B doesn't
+    } else if (dobDateB) {
+      return 1; // B has valid date, A doesn't
     }
     
     // Tie-breaker 2: patientId
@@ -78,28 +83,24 @@ export const sortPatientsByName = (patients, direction = 'asc') => {
  */
 export const sortPatientsByDob = (patients, direction = 'asc') => {
   return [...patients].sort((a, b) => {
-    const dobA = a.dob || '';
-    const dobB = b.dob || '';
+    const dobDateA = parseDobToDate(a.dob);
+    const dobDateB = parseDobToDate(b.dob);
     
     // Handle missing/invalid DOB - always push to bottom
-    const isValidA = dobA && dobA !== 'Unknown';
-    const isValidB = dobB && dobB !== 'Unknown';
-    
-    if (!isValidA && !isValidB) {
+    if (!dobDateA && !dobDateB) {
       // Both invalid, sort by name
       const nameA = (a.name || '').toLowerCase();
       const nameB = (b.name || '').toLowerCase();
       return compareValues(nameA, nameB, 'asc');
     }
     
-    if (!isValidA) return 1; // A is invalid, push to bottom
-    if (!isValidB) return -1; // B is invalid, push to bottom
+    if (!dobDateA) return 1; // A is invalid, push to bottom
+    if (!dobDateB) return -1; // B is invalid, push to bottom
     
-    // Both valid - compare DOB
-    // Note: DOB is formatted as "Mmm DD, YYYY" - we need to parse it
-    // For better sorting, we should use raw DICOM date, but for now use string comparison
-    if (dobA !== dobB) {
-      return compareValues(dobA, dobB, direction);
+    // Both valid - compare DOB chronologically
+    const comparison = dobDateA.getTime() - dobDateB.getTime();
+    if (comparison !== 0) {
+      return direction === 'asc' ? comparison : -comparison;
     }
     
     // Tie-breaker 1: name
