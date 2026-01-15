@@ -3,11 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
 import { isDicomFile } from '../services/dicomLoader';
+import { sortPatients } from '../utils/sortHelpers';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
+import Icon from '@mdi/react';
 import { makeStyles } from '@material-ui/core/styles';
-import { sortPatients } from '../utils/sortHelpers';
 
 import {
   Box,
@@ -31,9 +32,12 @@ import {
   Logout as LogoutIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
-  ArrowUpward as ArrowUpwardIcon,
-  ArrowDownward as ArrowDownwardIcon,
 } from '@mui/icons-material';
+
+import { 
+  mdiSortAscending, 
+  mdiSortDescending, 
+} from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -570,7 +574,7 @@ const Library = () => {
                 disabled={isLoading || patients.length === 0}
                 size="small"
               >
-                {patientSort.direction === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
+                <Icon path={patientSort.direction === 'asc' ? mdiSortAscending : mdiSortDescending} size={1} />
               </IconButton>
             </Tooltip>
           </Box>
