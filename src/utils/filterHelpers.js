@@ -73,3 +73,79 @@ export const filterPatientsByDobYear = (patients, filters) => {
     return fromCheck && toCheck;
   });
 };
+
+/**
+ * Parse formatted study date to YYYYMMDD number for comparison
+ * @param {string} dateStr - Formatted date (e.g., "Jan 15, 2026")
+ * @returns {number|null} YYYYMMDD as number, or null if invalid
+ */
+const parseStudyDateToNumber = (dateStr) => {
+  if (!dateStr || dateStr === 'Unknown') return null;
+  
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return parseInt(`${year}${month}${day}`);
+  } catch (e) {
+    return null;
+  }
+};
+
+/**
+ * Filter studies by date range
+ * @param {Array} studies - Array of study objects
+ * @param {Object} filters - { dateFromMonth: number|null, dateFromYear: number|null, dateToMonth: number|null, dateToYear: number|null }
+ * @returns {Array} Filtered studies
+ */
+export const filterStudiesByDateRange = (studies, filters) => {
+  if (!studies || studies.length === 0) return [];
+  
+  const { dateFromMonth, dateFromYear, dateToMonth, dateToYear } = filters;
+  
+  // If no filters applied, return all
+  const hasFromDate = dateFromMonth !== null && dateFromYear !== null;
+  const hasToDate = dateToMonth !== null && dateToYear !== null;
+  
+  if (!hasFromDate && !hasToDate) {
+    return studies;
+  }
+  
+  // Build from/to dates as YYYYMMDD numbers
+  let fromDate = null;
+  let toDate = null;
+  
+  if (hasFromDate) {
+    // First day of from month/year
+    fromDate = parseInt(`${dateFromYear}${String(dateFromMonth).padStart(2, '0')}01`);
+  }
+  
+  if (hasToDate) {
+    // Last day of to month/year
+    const lastDay = new Date(dateToYear, dateToMonth, 0).getDate();
+    toDate = parseInt(`${dateToYear}${String(dateToMonth).padStart(2, '0')}${String(lastDay).padStart(2, '0')}`);
+  }
+  
+  return studies.filter(study => {
+    const studyDate = parseStudyDateToNumber(study.date);
+    
+    // If study date is invalid, exclude it
+    if (studyDate === null) return false;
+    
+    // Check from date
+    if (fromDate !== null && studyDate < fromDate) {
+      return false;
+    }
+    
+    // Check to date
+    if (toDate !== null && studyDate > toDate) {
+      return false;
+    }
+    
+    return true;
+  });
+};

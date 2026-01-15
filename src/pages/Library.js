@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
 import { isDicomFile } from '../services/dicomLoader';
 import { sortPatients, sortStudies } from '../utils/sortHelpers';
-import { filterPatientsByDobYear, validateYearInput } from '../utils/filterHelpers';
+import { filterPatientsByDobYear, validateYearInput, filterStudiesByDateRange } from '../utils/filterHelpers';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -22,6 +22,8 @@ import {
   TextField,
   InputAdornment,
   Button,
+  Select,
+  MenuItem,
 } from '@material-ui/core';
 
 import {
@@ -197,6 +199,10 @@ const useStyles = makeStyles((theme) => ({
       padding: theme.spacing(1, 1),
       fontSize: '0.875rem',
     },
+    '& .MuiSelect-select': {
+      padding: theme.spacing(1, 1),
+      fontSize: '0.875rem',
+    },
   },
   filterToText: {
     color: theme.palette.text.secondary,
@@ -268,9 +274,21 @@ const Library = () => {
     dobYearTo: null,
   });
   
+  const [studyFilters, setStudyFilters] = useState({
+    dateFromMonth: null,
+    dateFromYear: null,
+    dateToMonth: null,
+    dateToYear: null,
+  });
+  
   // Temporary filter inputs (before Apply)
   const [tempDobFrom, setTempDobFrom] = useState('');
   const [tempDobTo, setTempDobTo] = useState('');
+  
+  const [tempDateFromMonth, setTempDateFromMonth] = useState('');
+  const [tempDateFromYear, setTempDateFromYear] = useState('');
+  const [tempDateToMonth, setTempDateToMonth] = useState('');
+  const [tempDateToYear, setTempDateToYear] = useState('');
   
   // Modal states
   const [patientInfoModal, setPatientInfoModal] = useState({
@@ -340,16 +358,17 @@ const Library = () => {
   }, [patients, patientFilters, patientSearchQuery, patientSort]);
 
   // Filtered and sorted studies
-  // Pipeline: filter by search → sort
+  // Pipeline: filter by date range → filter by search → sort
   const sortedStudies = useMemo(() => {
     if (!selectedPatient) return [];
     
-    // Step 1: Filter by search query
-    let filtered = selectedPatient.studies;
+    // Step 1: Filter by date range
+    let filtered = filterStudiesByDateRange(selectedPatient.studies, studyFilters);
     
+    // Step 2: Filter by search query
     if (studySearchQuery.trim()) {
       const query = studySearchQuery.toLowerCase().trim();
-      filtered = selectedPatient.studies.filter(study => {
+      filtered = filtered.filter(study => {
         const description = study.description.toLowerCase();
         const modality = study.modality.toLowerCase();
         const studyId = study.metadata.studyID ? study.metadata.studyID.toLowerCase() : '';
@@ -359,9 +378,9 @@ const Library = () => {
       });
     }
     
-    // Step 2: Sort
+    // Step 3: Sort
     return sortStudies(filtered, studySort);
-  }, [selectedPatient, studySearchQuery, studySort]);
+  }, [selectedPatient, studyFilters, studySearchQuery, studySort]);
 
   const loadPatients = async () => {
     setIsLoading(true);
@@ -543,6 +562,82 @@ const Library = () => {
       dobYearTo: null,
     });
   };
+  
+  // Study date filter handlers
+  const handleApplyStudyDateFilter = () => {
+    const fromMonth = tempDateFromMonth ? parseInt(tempDateFromMonth) : null;
+    const fromYear = tempDateFromYear ? parseInt(tempDateFromYear) : null;
+    const toMonth = tempDateToMonth ? parseInt(tempDateToMonth) : null;
+    const toYear = tempDateToYear ? parseInt(tempDateToYear) : null;
+    
+    // Build comparable dates (YYYYMM format for easy comparison)
+    let from = null;
+    let to = null;
+    
+    if (fromMonth !== null && fromYear !== null) {
+      from = fromYear * 100 + fromMonth;
+    }
+    
+    if (toMonth !== null && toYear !== null) {
+      to = toYear * 100 + toMonth;
+    }
+    
+    // Auto-swap if from > to
+    if (from !== null && to !== null && from > to) {
+      setTempDateFromMonth(toMonth.toString());
+      setTempDateFromYear(toYear.toString());
+      setTempDateToMonth(fromMonth.toString());
+      setTempDateToYear(fromYear.toString());
+      
+      setStudyFilters({
+        dateFromMonth: toMonth,
+        dateFromYear: toYear,
+        dateToMonth: fromMonth,
+        dateToYear: fromYear,
+      });
+    } else {
+      setStudyFilters({
+        dateFromMonth: fromMonth,
+        dateFromYear: fromYear,
+        dateToMonth: toMonth,
+        dateToYear: toYear,
+      });
+    }
+  };
+  
+  const handleClearStudyDateFilter = () => {
+    setTempDateFromMonth('');
+    setTempDateFromYear('');
+    setTempDateToMonth('');
+    setTempDateToYear('');
+    setStudyFilters({
+      dateFromMonth: null,
+      dateFromYear: null,
+      dateToMonth: null,
+      dateToYear: null,
+    });
+  };
+  
+  // Get available years from selected patient's studies
+  const availableYears = useMemo(() => {
+    if (!selectedPatient || selectedPatient.studies.length === 0) return [];
+    
+    const years = new Set();
+    selectedPatient.studies.forEach(study => {
+      if (study.date && study.date !== 'Unknown') {
+        try {
+          const date = new Date(study.date);
+          if (!isNaN(date.getTime())) {
+            years.add(date.getFullYear());
+          }
+        } catch (e) {
+          // Skip invalid dates
+        }
+      }
+    });
+    
+    return Array.from(years).sort((a, b) => b - a); // Newest first
+  }, [selectedPatient]);
   
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
@@ -933,7 +1028,7 @@ const Library = () => {
                   </span>
                 </Button>
               </Tooltip>
-              <Tooltip title="A - Z">
+              {/* <Tooltip title="A - Z">
                 <Button
                   className={`${classes.sortButton} ${studySort.key === 'description' && studySort.direction === 'asc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
                   onClick={() => setStudySort({ key: 'description', direction: 'asc' })}
@@ -960,7 +1055,111 @@ const Library = () => {
                     <Icon path={mdiSortAlphabeticalDescending} size={1}/>
                   </span>
                 </Button>
-              </Tooltip>
+              </Tooltip> */}
+            </Box>
+            
+            {/* Study date filter - right aligned */}
+            <Box className={classes.filterRight}>
+              <Typography className={classes.filterLabel}>Filter:</Typography>
+              <Typography className={classes.filterLabel}>From</Typography>
+              <Select
+                className={classes.filterInput}
+                value={tempDateFromMonth}
+                onChange={(e) => setTempDateFromMonth(e.target.value)}
+                disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                displayEmpty
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="">Month</MenuItem>
+                <MenuItem value="1">Jan</MenuItem>
+                <MenuItem value="2">Feb</MenuItem>
+                <MenuItem value="3">Mar</MenuItem>
+                <MenuItem value="4">Apr</MenuItem>
+                <MenuItem value="5">May</MenuItem>
+                <MenuItem value="6">Jun</MenuItem>
+                <MenuItem value="7">Jul</MenuItem>
+                <MenuItem value="8">Aug</MenuItem>
+                <MenuItem value="9">Sep</MenuItem>
+                <MenuItem value="10">Oct</MenuItem>
+                <MenuItem value="11">Nov</MenuItem>
+                <MenuItem value="12">Dec</MenuItem>
+              </Select>
+              <Select
+                className={classes.filterInput}
+                value={tempDateFromYear}
+                onChange={(e) => setTempDateFromYear(e.target.value)}
+                disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                displayEmpty
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="">Year</MenuItem>
+                {availableYears.map(year => (
+                  <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
+                ))}
+              </Select>
+              <Typography className={classes.filterToText}>To</Typography>
+              <Select
+                className={classes.filterInput}
+                value={tempDateToMonth}
+                onChange={(e) => setTempDateToMonth(e.target.value)}
+                disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                displayEmpty
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="">Month</MenuItem>
+                <MenuItem value="1">Jan</MenuItem>
+                <MenuItem value="2">Feb</MenuItem>
+                <MenuItem value="3">Mar</MenuItem>
+                <MenuItem value="4">Apr</MenuItem>
+                <MenuItem value="5">May</MenuItem>
+                <MenuItem value="6">Jun</MenuItem>
+                <MenuItem value="7">Jul</MenuItem>
+                <MenuItem value="8">Aug</MenuItem>
+                <MenuItem value="9">Sep</MenuItem>
+                <MenuItem value="10">Oct</MenuItem>
+                <MenuItem value="11">Nov</MenuItem>
+                <MenuItem value="12">Dec</MenuItem>
+              </Select>
+              <Select
+                className={classes.filterInput}
+                value={tempDateToYear}
+                onChange={(e) => setTempDateToYear(e.target.value)}
+                disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                displayEmpty
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="">Year</MenuItem>
+                {availableYears.map(year => (
+                  <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
+                ))}
+              </Select>
+              <Button
+                className={classes.filterButton}
+                onClick={handleApplyStudyDateFilter}
+                disabled={
+                  !selectedPatient || 
+                  selectedPatient.studies.length === 0 ||
+                  (tempDateFromMonth === '' && tempDateFromYear === '' && tempDateToMonth === '' && tempDateToYear === '')
+                }
+                size="small"
+                variant="contained"
+                color="primary"
+              >
+                Apply
+              </Button>
+              <Button
+                className={classes.filterButton}
+                onClick={handleClearStudyDateFilter}
+                disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                Clear
+              </Button>
             </Box>
           </Box>
           
