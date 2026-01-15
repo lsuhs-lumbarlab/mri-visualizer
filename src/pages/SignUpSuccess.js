@@ -3,7 +3,7 @@ import {
   Button,
   Typography,
 } from '@material-ui/core';
-import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import EditIcon from '@material-ui/icons/Edit';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate } from 'react-router-dom';
 
@@ -54,7 +54,7 @@ const SignUpSuccess = () => {
   return (
     <div className={classes.container}>
       <Paper className={classes.paper} elevation={3}>
-        <CheckCircleIcon className={classes.successIcon} />
+        <EditIcon className={classes.successIcon} />
         
         <Typography variant="h4" className={classes.title}>
           Account Created!

@@ -8,15 +8,18 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
+  Tooltip,
 } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import { 
-  Visibility as VisibilityIcon, 
-  VisibilityOff as VisibilityOffIcon 
-} from '@mui/icons-material';
 import { makeStyles } from '@material-ui/core/styles';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Icon from '@mdi/react';
+
+import {
+  mdiEye, 
+  mdiEyeOff  
+} from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -215,14 +218,16 @@ const Login = () => {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      onClick={handleTogglePasswordVisibility}
-                      onMouseDown={(e) => e.preventDefault()}
-                      edge="end"
-                      disabled={isLoading}
-                    >
-                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
+                    <Tooltip title={showPassword ? 'Hide Password' : 'Show Password'}>
+                      <IconButton
+                        onClick={handleTogglePasswordVisibility}
+                        onMouseDown={(e) => e.preventDefault()}
+                        edge="end"
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <Icon path={mdiEyeOff} size={1} /> : <Icon path={mdiEye} size={1} />}
+                      </IconButton>
+                    </Tooltip>
                   </InputAdornment>
                 ),
               }}

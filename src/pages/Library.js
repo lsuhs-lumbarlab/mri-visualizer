@@ -26,16 +26,11 @@ import {
   MenuItem,
 } from '@material-ui/core';
 
-import {
-  Info as InfoIcon,
-  Share as ShareIcon,
-  DriveFolderUpload as DriveFolderUploadIcon,
-  Logout as LogoutIcon,
-  Search as SearchIcon,
-  Clear as ClearIcon,
-} from '@mui/icons-material';
+import EditIcon from '@material-ui/icons/Edit';
 
 import { 
+  mdiFolderUploadOutline,
+  mdiLogoutVariant,
   mdiSortAlphabeticalAscending, 
   mdiSortAlphabeticalDescending,
   mdiSortNumericAscending,
@@ -717,7 +712,7 @@ const Library = () => {
             <IconButton
               onClick={handleUpload}
             >
-              <DriveFolderUploadIcon />
+              <Icon path={mdiFolderUploadOutline} size={1} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -725,7 +720,7 @@ const Library = () => {
           <IconButton
             onClick={handleLogout}
           >
-            <LogoutIcon />
+            <Icon path={mdiLogoutVariant} size={1} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -752,7 +747,7 @@ const Library = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <EditIcon />
                   </InputAdornment>
                 ),
                 endAdornment: patientSearchQuery && (
@@ -762,7 +757,7 @@ const Library = () => {
                       onClick={() => setPatientSearchQuery('')}
                       edge="end"
                     >
-                      <ClearIcon fontSize="small" />
+                      <EditIcon fontSize="small" />
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -937,7 +932,7 @@ const Library = () => {
                             size="small"
                             onClick={(e) => handlePatientInfo(e, patient)}
                           >
-                            <InfoIcon />
+                            <EditIcon />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Share Patient">
@@ -945,7 +940,7 @@ const Library = () => {
                             size="small"
                             onClick={(e) => handlePatientShare(e, patient)}
                           >
-                            <ShareIcon />
+                            <EditIcon />
                           </IconButton>
                         </Tooltip>
                       </Box>
@@ -977,7 +972,7 @@ const Library = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <EditIcon />
                   </InputAdornment>
                 ),
                 endAdornment: studySearchQuery && (
@@ -987,7 +982,7 @@ const Library = () => {
                       onClick={() => setStudySearchQuery('')}
                       edge="end"
                     >
-                      <ClearIcon fontSize="small" />
+                      <EditIcon fontSize="small" />
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -1210,7 +1205,7 @@ const Library = () => {
                             size="small"
                             onClick={(e) => handleStudyInfo(e, study)}
                           >
-                            <InfoIcon />
+                            <EditIcon />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Share Study">
@@ -1218,7 +1213,7 @@ const Library = () => {
                             size="small"
                             onClick={(e) => handleStudyShare(e, study)}
                           >
-                            <ShareIcon />
+                            <EditIcon />
                           </IconButton>
                         </Tooltip>
                       </Box>

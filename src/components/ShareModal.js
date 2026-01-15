@@ -12,7 +12,7 @@ import {
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { Alert } from '@material-ui/lab';
-import { Close as CloseIcon } from '@mui/icons-material';
+import EditIcon from '@material-ui/icons/Edit';
 
 const useStyles = makeStyles((theme) => ({
   dialogTitle: {
@@ -115,7 +115,7 @@ const ShareModal = ({ open, onClose, onShare, title, itemType }) => {
           onClick={handleClose}
           disabled={isLoading}
         >
-          <CloseIcon />
+          <EditIcon />
         </IconButton>
       </DialogTitle>
       

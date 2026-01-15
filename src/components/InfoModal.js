@@ -9,7 +9,7 @@ import {
   IconButton,
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import { Close as CloseIcon } from '@mui/icons-material';
+import EditIcon from '@material-ui/icons/Edit';
 
 const useStyles = makeStyles((theme) => ({
   dialogTitle: {
@@ -63,7 +63,7 @@ const InfoModal = ({ open, onClose, title, data }) => {
           className={classes.closeButton}
           onClick={onClose}
         >
-          <CloseIcon />
+          <EditIcon />
         </IconButton>
       </DialogTitle>
       

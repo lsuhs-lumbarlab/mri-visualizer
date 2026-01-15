@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { makeStyles } from '@material-ui/core/styles';
-import SvgIcon from '@mui/material/SvgIcon';
+import SvgIcon from '@material-ui/core/SvgIcon';
+import EditIcon from '@material-ui/icons/Edit';
 import * as cornerstoneTools from 'cornerstone-tools';
 import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
@@ -27,18 +28,6 @@ import {
   mdiAngleAcute,
   mdiCursorDefault
 } from '@mdi/js';
-
-import { 
-  Logout as LogoutIcon, 
-  ArrowBack as ArrowBackIcon,
-  PanTool as PanToolIcon,
-  ZoomIn as ZoomInIcon,
-  Brightness6 as Brightness6Icon,
-  TextFields as TextFieldsIcon,
-  Refresh as RefreshIcon,
-  Undo as UndoIcon,
-  Redo as RedoIcon
-} from '@mui/icons-material';
 
 // Custom COR icon component
 const CorIcon = (props) => (
@@ -501,7 +490,7 @@ function ViewerApp() {
               className={activeTool === 'pan' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('pan')}
             >
-              <PanToolIcon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
 
@@ -510,7 +499,7 @@ function ViewerApp() {
               className={activeTool === 'zoom' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('zoom')}
             >
-              <ZoomInIcon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
 
@@ -519,7 +508,7 @@ function ViewerApp() {
               className={activeTool === 'wl/ww' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('wl/ww')}
             >
-              <Brightness6Icon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
 
@@ -555,7 +544,7 @@ function ViewerApp() {
               className={activeTool === 'text' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('text')}
             >
-              <TextFieldsIcon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
 
@@ -567,7 +556,7 @@ function ViewerApp() {
               className={classes.iconButton}
               // onClick={handleLogout}
             >
-              <RefreshIcon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
 
@@ -576,7 +565,7 @@ function ViewerApp() {
               className={classes.iconButton}
               // onClick={handleLogout}
             >
-              <UndoIcon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
 
@@ -585,7 +574,7 @@ function ViewerApp() {
               className={classes.iconButton}
               // onClick={handleLogout}
             >
-              <RedoIcon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
 
@@ -619,7 +608,7 @@ function ViewerApp() {
               className={classes.iconButton}
               onClick={handleLogout}
             >
-              <LogoutIcon />
+              <EditIcon />
             </IconButton>
           </Tooltip>
         </Box>
