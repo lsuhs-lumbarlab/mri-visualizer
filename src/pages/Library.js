@@ -189,13 +189,13 @@ const useStyles = makeStyles((theme) => ({
     whiteSpace: 'nowrap',
   },
   filterInput: {
-    width: 80,
-    '& input': {
-      padding: theme.spacing(0.75, 1),
-      fontSize: '0.875rem',
-    },
+    width: 95,
     '& .MuiOutlinedInput-root': {
       backgroundColor: theme.palette.background.default,
+    },
+    '& input': {
+      padding: theme.spacing(1, 1),
+      fontSize: '0.875rem',
     },
   },
   filterToText: {
@@ -203,8 +203,8 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.875rem',
   },
   filterButton: {
-    fontSize: '0.75rem',
-    padding: theme.spacing(0.5, 1),
+    fontSize: '0.875rem',
+    padding: theme.spacing(0.5, 1.5),
     minWidth: 'auto',
     textTransform: 'none',
   },
@@ -757,7 +757,7 @@ const Library = () => {
               <Button
                 className={classes.filterButton}
                 onClick={handleApplyDobFilter}
-                disabled={isLoading || patients.length === 0}
+                disabled={isLoading || patients.length === 0 || (!tempDobFrom && !tempDobTo)}
                 size="small"
                 variant="contained"
                 color="primary"
