@@ -118,7 +118,6 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: theme.spacing(1),
   },
   cardActions: {
     display: 'flex',
@@ -126,7 +125,7 @@ const useStyles = makeStyles((theme) => ({
   },
   patientName: {
     fontWeight: 600,
-    fontSize: '1.1rem',
+    fontSize: '1rem',
   },
   studyDescription: {
     fontWeight: 600,
