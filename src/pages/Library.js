@@ -20,9 +20,7 @@ import {
   Tooltip,
   TextField,
   InputAdornment,
-  Select,
-  MenuItem,
-  FormControl,
+  Button,
 } from '@material-ui/core';
 
 import {
@@ -35,8 +33,10 @@ import {
 } from '@mui/icons-material';
 
 import { 
-  mdiSortAscending, 
-  mdiSortDescending, 
+  mdiSortAlphabeticalAscending, 
+  mdiSortAlphabeticalDescending,
+  mdiSortNumericAscending,
+  mdiSortNumericDescending, 
 } from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
@@ -169,20 +169,34 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(1),
+    flexWrap: 'wrap',
   },
   sortLabel: {
     color: theme.palette.text.secondary,
     fontSize: '0.875rem',
     whiteSpace: 'nowrap',
   },
-  sortSelect: {
-    width: 150,
-    '& .MuiOutlinedInput-root': {
-      backgroundColor: theme.palette.background.default,
+  sortButton: {
+    fontSize: '0.875rem',
+    padding: theme.spacing(0.5, 1.5),
+    minWidth: 'auto',
+    textTransform: 'none',
+    border: `1px solid ${theme.palette.divider}`,
+    display: 'flex',
+    alignItems: 'center',
+    '&.active': {
+      backgroundColor: theme.palette.primary.main,
+      color: theme.palette.primary.contrastText,
+      borderColor: theme.palette.primary.main,
+      '&:hover': {
+        backgroundColor: theme.palette.primary.dark,
+      },
     },
   },
-  directionButton: {
-    padding: theme.spacing(0.5),
+  sortIcon: {
+    marginLeft: theme.spacing(1),
+    display: 'flex',
+    alignItems: 'center',
   },
 }));
 
@@ -553,30 +567,54 @@ const Library = () => {
           {/* Patient sort controls */}
           <Box className={classes.sortContainer}>
             <Typography className={classes.sortLabel}>Sort by:</Typography>
-            <FormControl size="small" className={classes.sortSelect}>
-              <Select
-                value={patientSort.key}
-                onChange={(e) => setPatientSort({ ...patientSort, key: e.target.value })}
-                disabled={isLoading || patients.length === 0}
-                variant="outlined"
-              >
-                <MenuItem value="name">Name</MenuItem>
-                <MenuItem value="dob">Date of Birth</MenuItem>
-              </Select>
-            </FormControl>
-            <Tooltip title={patientSort.direction === 'asc' ? 'Ascending' : 'Descending'}>
-              <IconButton
-                className={classes.directionButton}
-                onClick={() => setPatientSort({ 
-                  ...patientSort, 
-                  direction: patientSort.direction === 'asc' ? 'desc' : 'asc' 
-                })}
-                disabled={isLoading || patients.length === 0}
-                size="small"
-              >
-                <Icon path={patientSort.direction === 'asc' ? mdiSortAscending : mdiSortDescending} size={1} />
-              </IconButton>
-            </Tooltip>
+            <Button
+              className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+              onClick={() => setPatientSort({ key: 'name', direction: 'asc' })}
+              disabled={isLoading || patients.length === 0}
+              size="small"
+              variant="outlined"
+            >
+              Name
+              <span className={classes.sortIcon}>
+                <Icon path={mdiSortAlphabeticalAscending} size={1}/>
+              </span>
+            </Button>
+            <Button
+              className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+              onClick={() => setPatientSort({ key: 'name', direction: 'desc' })}
+              disabled={isLoading || patients.length === 0}
+              size="small"
+              variant="outlined"
+            >
+              Name
+              <span className={classes.sortIcon}>
+                <Icon path={mdiSortAlphabeticalDescending} size={1.0}/>
+              </span>
+            </Button>
+            <Button
+              className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+              onClick={() => setPatientSort({ key: 'dob', direction: 'asc' })}
+              disabled={isLoading || patients.length === 0}
+              size="small"
+              variant="outlined"
+            >
+              DOB
+              <span className={classes.sortIcon}>
+                <Icon path={mdiSortNumericAscending} size={1}/>
+              </span>
+            </Button>
+            <Button
+              className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+              onClick={() => setPatientSort({ key: 'dob', direction: 'desc' })}
+              disabled={isLoading || patients.length === 0}
+              size="small"
+              variant="outlined"
+            >
+              DOB
+              <span className={classes.sortIcon}>
+                <Icon path={mdiSortNumericDescending} size={1}/>
+              </span>
+            </Button>
           </Box>
           
           {isLoading ? (
@@ -687,7 +725,7 @@ const Library = () => {
           
           {!selectedPatient ? (
             <Box className={classes.emptyState}>
-              <Typography variant="body1" className={classes.emptyStateText}>
+              <Typography variant="h6" className={classes.emptyStateText}>
                 Select a patient to view their studies
               </Typography>
             </Box>
