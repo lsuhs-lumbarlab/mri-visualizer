@@ -120,6 +120,200 @@ export const sortPatientsByDob = (patients, direction = 'asc') => {
 };
 
 /**
+ * Parse DICOM date (YYYYMMDD) to comparable number
+ * @param {string} dicomDate - Date in DICOM format (YYYYMMDD)
+ * @returns {number} Comparable number (0 if invalid)
+ */
+const parseDicomDateToNumber = (dicomDate) => {
+  if (!dicomDate || dicomDate === 'Unknown') return 0;
+  
+  // Parse YYYYMMDD format
+  if (typeof dicomDate === 'string' && /^\d{8}$/.test(dicomDate)) {
+    return parseInt(dicomDate);
+  }
+  
+  return 0;
+};
+
+/**
+ * Parse DICOM time (HHMMSS) to comparable number
+ * @param {string} dicomTime - Time in DICOM format (HHMMSS or HHMMSS.FFFFFF)
+ * @returns {number} Comparable number (0 if invalid)
+ */
+const parseDicomTimeToNumber = (dicomTime) => {
+  if (!dicomTime || dicomTime === 'Unknown') return 0;
+  
+  // Extract HHMMSS (ignore fractional seconds)
+  const timeStr = dicomTime.substring(0, 6);
+  if (/^\d{6}$/.test(timeStr)) {
+    return parseInt(timeStr);
+  }
+  
+  return 0;
+};
+
+/**
+ * Parse formatted study date back to DICOM format for sorting
+ * Study date is stored as formatted "Mmm DD, YYYY" but we need YYYYMMDD for comparison
+ * @param {string} formattedDate - Formatted date string
+ * @returns {number} Comparable number (0 if invalid)
+ */
+const parseFormattedStudyDate = (formattedDate) => {
+  if (!formattedDate || formattedDate === 'Unknown') return 0;
+  
+  try {
+    const date = new Date(formattedDate);
+    if (isNaN(date.getTime())) return 0;
+    
+    // Convert to YYYYMMDD format for comparison
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return parseInt(`${year}${month}${day}`);
+  } catch {
+    return 0;
+  }
+};
+
+/**
+ * Sort studies by date with tie-breakers
+ * Tie-breakers: studyDate → studyTime → description → accessionNumber → studyId
+ * Missing dates always go to bottom regardless of direction
+ * @param {Array} studies - Array of study objects
+ * @param {string} direction - 'asc' or 'desc'
+ * @returns {Array} Sorted array (new array, does not mutate)
+ */
+export const sortStudiesByDate = (studies, direction = 'desc') => {
+  return [...studies].sort((a, b) => {
+    // Parse study dates (formatted as "Mmm DD, YYYY")
+    const dateA = parseFormattedStudyDate(a.date);
+    const dateB = parseFormattedStudyDate(b.date);
+    
+    // Handle missing/invalid dates - always push to bottom
+    if (!dateA && !dateB) {
+      // Both invalid, sort by description
+      const descA = (a.description || '').toLowerCase();
+      const descB = (b.description || '').toLowerCase();
+      return compareValues(descA, descB, 'asc');
+    }
+    
+    if (!dateA) return 1; // A is invalid, push to bottom
+    if (!dateB) return -1; // B is invalid, push to bottom
+    
+    // Both valid - compare dates
+    if (dateA !== dateB) {
+      return compareValues(dateA, dateB, direction);
+    }
+    
+    // Tie-breaker 1: studyTime
+    // Parse formatted time "HH:MM:SS" back to comparable number
+    const timeA = a.time && a.time !== 'Unknown' ? a.time.replace(/:/g, '') : '';
+    const timeB = b.time && b.time !== 'Unknown' ? b.time.replace(/:/g, '') : '';
+    
+    if (timeA && timeB && timeA !== timeB) {
+      return compareValues(parseInt(timeA), parseInt(timeB), direction);
+    }
+    
+    // Tie-breaker 2: description
+    const descA = (a.description || '').toLowerCase();
+    const descB = (b.description || '').toLowerCase();
+    
+    if (descA !== descB) {
+      return compareValues(descA, descB, 'asc');
+    }
+    
+    // Tie-breaker 3: accessionNumber
+    const accA = a.metadata?.accessionNumber || '';
+    const accB = b.metadata?.accessionNumber || '';
+    
+    if (accA !== accB) {
+      return compareValues(accA, accB, 'asc');
+    }
+    
+    // Tie-breaker 4: studyId
+    const idA = a.metadata?.studyID || '';
+    const idB = b.metadata?.studyID || '';
+    
+    return compareValues(idA, idB, 'asc');
+  });
+};
+
+/**
+ * Sort studies by description with tie-breakers
+ * Tie-breakers: description → studyDate → studyTime → accessionNumber → studyId
+ * @param {Array} studies - Array of study objects
+ * @param {string} direction - 'asc' or 'desc'
+ * @returns {Array} Sorted array (new array, does not mutate)
+ */
+export const sortStudiesByDescription = (studies, direction = 'asc') => {
+  return [...studies].sort((a, b) => {
+    // Primary: description (case-insensitive)
+    const descA = (a.description || '').toLowerCase();
+    const descB = (b.description || '').toLowerCase();
+    
+    if (descA !== descB) {
+      return compareValues(descA, descB, direction);
+    }
+    
+    // Tie-breaker 1: studyDate
+    const dateA = parseFormattedStudyDate(a.date);
+    const dateB = parseFormattedStudyDate(b.date);
+    
+    if (dateA && dateB && dateA !== dateB) {
+      return compareValues(dateA, dateB, 'desc'); // Newer first
+    } else if (dateA) {
+      return -1;
+    } else if (dateB) {
+      return 1;
+    }
+    
+    // Tie-breaker 2: studyTime
+    const timeA = a.time && a.time !== 'Unknown' ? a.time.replace(/:/g, '') : '';
+    const timeB = b.time && b.time !== 'Unknown' ? b.time.replace(/:/g, '') : '';
+    
+    if (timeA && timeB && timeA !== timeB) {
+      return compareValues(parseInt(timeA), parseInt(timeB), 'desc');
+    }
+    
+    // Tie-breaker 3: accessionNumber
+    const accA = a.metadata?.accessionNumber || '';
+    const accB = b.metadata?.accessionNumber || '';
+    
+    if (accA !== accB) {
+      return compareValues(accA, accB, 'asc');
+    }
+    
+    // Tie-breaker 4: studyId
+    const idA = a.metadata?.studyID || '';
+    const idB = b.metadata?.studyID || '';
+    
+    return compareValues(idA, idB, 'asc');
+  });
+};
+
+/**
+ * Main study sorting function
+ * @param {Array} studies - Array of study objects
+ * @param {Object} sortConfig - { key: 'date' | 'description', direction: 'asc' | 'desc' }
+ * @returns {Array} Sorted array (new array, does not mutate)
+ */
+export const sortStudies = (studies, sortConfig) => {
+  if (!studies || studies.length === 0) return studies;
+  
+  const { key, direction } = sortConfig;
+  
+  switch (key) {
+    case 'date':
+      return sortStudiesByDate(studies, direction);
+    case 'description':
+      return sortStudiesByDescription(studies, direction);
+    default:
+      return studies;
+  }
+};
+
+/**
  * Main patient sorting function
  * @param {Array} patients - Array of patient objects
  * @param {Object} sortConfig - { key: 'name' | 'dob', direction: 'asc' | 'desc' }

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
 import { isDicomFile } from '../services/dicomLoader';
-import { sortPatients } from '../utils/sortHelpers';
+import { sortPatients, sortStudies } from '../utils/sortHelpers';
 import { filterPatientsByDobYear, validateYearInput } from '../utils/filterHelpers';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
@@ -257,6 +257,11 @@ const Library = () => {
     direction: 'asc' // 'asc' | 'desc'
   });
   
+  const [studySort, setStudySort] = useState({
+    key: 'date', // 'date' | 'description'
+    direction: 'desc' // 'asc' | 'desc' (default newest first)
+  });
+  
   // Filter states
   const [patientFilters, setPatientFilters] = useState({
     dobYearFrom: null,
@@ -334,23 +339,29 @@ const Library = () => {
     return sortPatients(filtered, patientSort);
   }, [patients, patientFilters, patientSearchQuery, patientSort]);
 
-  // Filtered studies based on search query
-  // Searches: description, modality, study ID, and accession number (case-insensitive)
-  // Note: Study search is automatically cleared when selectedPatient changes (see useEffect above)
-  const filteredStudies = useMemo(() => {
+  // Filtered and sorted studies
+  // Pipeline: filter by search → sort
+  const sortedStudies = useMemo(() => {
     if (!selectedPatient) return [];
-    if (!studySearchQuery.trim()) return selectedPatient.studies;
     
-    const query = studySearchQuery.toLowerCase().trim();
-    return selectedPatient.studies.filter(study => {
-      const description = study.description.toLowerCase();
-      const modality = study.modality.toLowerCase();
-      const studyId = study.metadata.studyID ? study.metadata.studyID.toLowerCase() : '';
-      const accessionNumber = study.metadata.accessionNumber ? study.metadata.accessionNumber.toLowerCase() : '';
-      
-      return description.includes(query) || modality.includes(query) || studyId.includes(query) || accessionNumber.includes(query);
-    });
-  }, [selectedPatient, studySearchQuery]);
+    // Step 1: Filter by search query
+    let filtered = selectedPatient.studies;
+    
+    if (studySearchQuery.trim()) {
+      const query = studySearchQuery.toLowerCase().trim();
+      filtered = selectedPatient.studies.filter(study => {
+        const description = study.description.toLowerCase();
+        const modality = study.modality.toLowerCase();
+        const studyId = study.metadata.studyID ? study.metadata.studyID.toLowerCase() : '';
+        const accessionNumber = study.metadata.accessionNumber ? study.metadata.accessionNumber.toLowerCase() : '';
+        
+        return description.includes(query) || modality.includes(query) || studyId.includes(query) || accessionNumber.includes(query);
+      });
+    }
+    
+    // Step 2: Sort
+    return sortStudies(filtered, studySort);
+  }, [selectedPatient, studySearchQuery, studySort]);
 
   const loadPatients = async () => {
     setIsLoading(true);
@@ -670,54 +681,62 @@ const Library = () => {
             {/* Left side - Sort controls */}
             <Box className={classes.sortLeft}>
               <Typography className={classes.sortLabel}>Sort by:</Typography>
-              <Button
-                className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                onClick={() => setPatientSort({ key: 'name', direction: 'asc' })}
-                disabled={isLoading || patients.length === 0}
-                size="small"
-                variant="outlined"
-              >
-                Name
-                <span className={classes.sortIcon}>
-                  <Icon path={mdiSortAlphabeticalAscending} size={1}/>
-                </span>
-              </Button>
-              <Button
-                className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                onClick={() => setPatientSort({ key: 'name', direction: 'desc' })}
-                disabled={isLoading || patients.length === 0}
-                size="small"
-                variant="outlined"
-              >
-                Name
-                <span className={classes.sortIcon}>
-                  <Icon path={mdiSortAlphabeticalDescending} size={1.0}/>
-                </span>
-              </Button>
-              <Button
-                className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                onClick={() => setPatientSort({ key: 'dob', direction: 'asc' })}
-                disabled={isLoading || patients.length === 0}
-                size="small"
-                variant="outlined"
-              >
-                DOB
-                <span className={classes.sortIcon}>
-                  <Icon path={mdiSortNumericAscending} size={1}/>
-                </span>
-              </Button>
-              <Button
-                className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                onClick={() => setPatientSort({ key: 'dob', direction: 'desc' })}
-                disabled={isLoading || patients.length === 0}
-                size="small"
-                variant="outlined"
-              >
-                DOB
-                <span className={classes.sortIcon}>
-                  <Icon path={mdiSortNumericDescending} size={1}/>
-                </span>
-              </Button>
+              <Tooltip title="A - Z">
+                <Button
+                  className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => setPatientSort({ key: 'name', direction: 'asc' })}
+                  disabled={isLoading || patients.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  Name
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortAlphabeticalAscending} size={1}/>
+                  </span>
+                </Button>
+              </Tooltip>
+              <Tooltip title="Z - A">
+                <Button
+                  className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => setPatientSort({ key: 'name', direction: 'desc' })}
+                  disabled={isLoading || patients.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  Name
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortAlphabeticalDescending} size={1.0}/>
+                  </span>
+                </Button>
+              </Tooltip>
+              <Tooltip title="Oldest - Youngest">
+                <Button
+                  className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => setPatientSort({ key: 'dob', direction: 'asc' })}
+                  disabled={isLoading || patients.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  DOB
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortNumericAscending} size={1}/>
+                  </span>
+                </Button>
+              </Tooltip>
+              <Tooltip title="Youngest - Oldest">
+                <Button
+                  className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => setPatientSort({ key: 'dob', direction: 'desc' })}
+                  disabled={isLoading || patients.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  DOB
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortNumericDescending} size={1}/>
+                  </span>
+                </Button>
+              </Tooltip>
             </Box>
             
             {/* Right side - DOB Filter */}
@@ -882,6 +901,69 @@ const Library = () => {
             />
           </Box>
           
+          {/* Study sort controls */}
+          <Box className={classes.sortContainer}>
+            <Box className={classes.sortLeft}>
+              <Typography className={classes.sortLabel}>Sort by:</Typography>
+              <Tooltip title="Newest - Oldest">
+                <Button
+                  className={`${classes.sortButton} ${studySort.key === 'date' && studySort.direction === 'desc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
+                  onClick={() => setStudySort({ key: 'date', direction: 'desc' })}
+                  disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  Date
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortNumericDescending} size={1}/>
+                  </span>
+                </Button>
+              </Tooltip>
+              <Tooltip title="Oldest - Newest">
+                <Button
+                  className={`${classes.sortButton} ${studySort.key === 'date' && studySort.direction === 'asc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
+                  onClick={() => setStudySort({ key: 'date', direction: 'asc' })}
+                  disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  Date
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortNumericAscending} size={1}/>
+                  </span>
+                </Button>
+              </Tooltip>
+              <Tooltip title="A - Z">
+                <Button
+                  className={`${classes.sortButton} ${studySort.key === 'description' && studySort.direction === 'asc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
+                  onClick={() => setStudySort({ key: 'description', direction: 'asc' })}
+                  disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  Description
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortAlphabeticalAscending} size={1}/>
+                  </span>
+                </Button>
+              </Tooltip>
+              <Tooltip title="Z - A">
+                <Button
+                  className={`${classes.sortButton} ${studySort.key === 'description' && studySort.direction === 'desc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
+                  onClick={() => setStudySort({ key: 'description', direction: 'desc' })}
+                  disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                  size="small"
+                  variant="outlined"
+                >
+                  Description
+                  <span className={classes.sortIcon}>
+                    <Icon path={mdiSortAlphabeticalDescending} size={1}/>
+                  </span>
+                </Button>
+              </Tooltip>
+            </Box>
+          </Box>
+          
           {!selectedPatient ? (
             <Box className={classes.emptyState}>
               <Typography variant="h6" className={classes.emptyStateText}>
@@ -894,7 +976,7 @@ const Library = () => {
                 No studies available.
               </Typography>
             </Box>
-          ) : filteredStudies.length === 0 ? (
+          ) : sortedStudies.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
                 No studies match your search.
@@ -902,7 +984,7 @@ const Library = () => {
             </Box>
           ) : (
             <Box className={classes.scrollableList}>
-              {filteredStudies.map((study) => (
+              {sortedStudies.map((study) => (
                 <Card
                   key={study.id}
                   className={classes.studyCard}
