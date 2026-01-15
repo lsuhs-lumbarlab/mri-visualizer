@@ -4,6 +4,27 @@
  */
 
 /**
+ * Validate and clamp year input to valid range (1900 to current year)
+ * @param {string} value - Year input value
+ * @returns {string} Validated year string, or empty string if invalid
+ */
+export const validateYearInput = (value) => {
+  if (!value) return '';
+  
+  const year = parseInt(value);
+  if (isNaN(year)) return '';
+  
+  const currentYear = new Date().getFullYear();
+  const minYear = 1900;
+  
+  // Clamp to valid range
+  if (year < minYear) return minYear.toString();
+  if (year > currentYear) return currentYear.toString();
+  
+  return year.toString();
+};
+
+/**
  * Extract year from formatted DOB string
  * @param {string} dob - Formatted DOB (e.g., "Jan 15, 1980" or "Unknown")
  * @returns {number|null} Year as number, or null if invalid

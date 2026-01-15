@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
 import { isDicomFile } from '../services/dicomLoader';
 import { sortPatients } from '../utils/sortHelpers';
-import { filterPatientsByDobYear } from '../utils/filterHelpers';
+import { filterPatientsByDobYear, validateYearInput } from '../utils/filterHelpers';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -480,9 +480,36 @@ const Library = () => {
     }
   };
 
+  const handleDobFromChange = (e) => {
+    const value = e.target.value;
+    setTempDobFrom(value);
+  };
+  
+  const handleDobToChange = (e) => {
+    const value = e.target.value;
+    setTempDobTo(value);
+  };
+  
+  const handleDobFromBlur = () => {
+    const validated = validateYearInput(tempDobFrom);
+    setTempDobFrom(validated);
+  };
+  
+  const handleDobToBlur = () => {
+    const validated = validateYearInput(tempDobTo);
+    setTempDobTo(validated);
+  };
+  
   const handleApplyDobFilter = () => {
-    let fromYear = tempDobFrom ? parseInt(tempDobFrom) : null;
-    let toYear = tempDobTo ? parseInt(tempDobTo) : null;
+    // Validate inputs first
+    const validatedFrom = validateYearInput(tempDobFrom);
+    const validatedTo = validateYearInput(tempDobTo);
+    
+    setTempDobFrom(validatedFrom);
+    setTempDobTo(validatedTo);
+    
+    let fromYear = validatedFrom ? parseInt(validatedFrom) : null;
+    let toYear = validatedTo ? parseInt(validatedTo) : null;
     
     // Auto-swap if from >= to
     if (fromYear !== null && toYear !== null && fromYear > toYear) {
@@ -703,7 +730,8 @@ const Library = () => {
                 type="number"
                 placeholder="Min Year"
                 value={tempDobFrom}
-                onChange={(e) => setTempDobFrom(e.target.value)}
+                onChange={handleDobFromChange}
+                onBlur={handleDobFromBlur}
                 disabled={isLoading || patients.length === 0}
                 inputProps={{
                   min: 1900,
@@ -718,7 +746,8 @@ const Library = () => {
                 type="number"
                 placeholder="Max Year"
                 value={tempDobTo}
-                onChange={(e) => setTempDobTo(e.target.value)}
+                onChange={handleDobToChange}
+                onBlur={handleDobToBlur}
                 disabled={isLoading || patients.length === 0}
                 inputProps={{
                   min: 1900,
