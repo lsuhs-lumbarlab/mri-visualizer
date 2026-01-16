@@ -1,11 +1,14 @@
+import { makeStyles } from '@material-ui/core/styles';
+import { useNavigate } from 'react-router-dom';
+import Icon from '@mdi/react';
+
 import {
   Paper,
   Button,
   Typography,
 } from '@material-ui/core';
-import EditIcon from '@material-ui/icons/Edit';
-import { makeStyles } from '@material-ui/core/styles';
-import { useNavigate } from 'react-router-dom';
+
+import { mdiCheckCircle } from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -25,7 +28,8 @@ const useStyles = makeStyles((theme) => ({
     textAlign: 'center',
   },
   successIcon: {
-    fontSize: 80,
+    width: 80,
+    height: 80,
     color: '#4caf50',
     marginBottom: theme.spacing(2),
   },
@@ -54,7 +58,7 @@ const SignUpSuccess = () => {
   return (
     <div className={classes.container}>
       <Paper className={classes.paper} elevation={3}>
-        <EditIcon className={classes.successIcon} />
+        <Icon path={mdiCheckCircle} size={1} className={classes.successIcon} />
         
         <Typography variant="h4" className={classes.title}>
           Account Created!

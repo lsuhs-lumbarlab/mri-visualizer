@@ -3,7 +3,6 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { makeStyles } from '@material-ui/core/styles';
 import SvgIcon from '@material-ui/core/SvgIcon';
-import EditIcon from '@material-ui/icons/Edit';
 import * as cornerstoneTools from 'cornerstone-tools';
 import StudyExplorer from '../components/StudyExplorer';
 import CornerstoneViewport from '../components/CornerstoneViewport';
@@ -23,10 +22,18 @@ import {
 } from '@material-ui/core';
 
 import {
-  mdiArrowSplitHorizontal,
+  mdiCursorDefault,
+  mdiHandBackRight,
+  mdiMagnifyPlusOutline,
+  mdiBrightness6,
   mdiRuler,
   mdiAngleAcute,
-  mdiCursorDefault
+  mdiFormatTitle,
+  mdiRefresh,
+  mdiUndo,
+  mdiRedo,
+  mdiArrowSplitHorizontal,
+  mdiLogout 
 } from '@mdi/js';
 
 // Custom COR icon component
@@ -490,7 +497,7 @@ function ViewerApp() {
               className={activeTool === 'pan' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('pan')}
             >
-              <EditIcon />
+              <Icon path={mdiHandBackRight} size={1} />
             </IconButton>
           </Tooltip>
 
@@ -499,7 +506,7 @@ function ViewerApp() {
               className={activeTool === 'zoom' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('zoom')}
             >
-              <EditIcon />
+              <Icon path={mdiMagnifyPlusOutline} size={1} />
             </IconButton>
           </Tooltip>
 
@@ -508,7 +515,7 @@ function ViewerApp() {
               className={activeTool === 'wl/ww' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('wl/ww')}
             >
-              <EditIcon />
+              <Icon path={mdiBrightness6} size={1} />
             </IconButton>
           </Tooltip>
 
@@ -544,7 +551,7 @@ function ViewerApp() {
               className={activeTool === 'text' ? classes.activeToolButton : classes.iconButton}
               onClick={() => handleToolSelect('text')}
             >
-              <EditIcon />
+              <Icon path={mdiFormatTitle} size={1} />
             </IconButton>
           </Tooltip>
 
@@ -554,27 +561,24 @@ function ViewerApp() {
           <Tooltip title="Reset Image">
             <IconButton 
               className={classes.iconButton}
-              // onClick={handleLogout}
             >
-              <EditIcon />
+              <Icon path={mdiRefresh} size={1} />
             </IconButton>
           </Tooltip>
 
           <Tooltip title="Undo">
             <IconButton 
               className={classes.iconButton}
-              // onClick={handleLogout}
             >
-              <EditIcon />
+              <Icon path={mdiUndo} size={1} />
             </IconButton>
           </Tooltip>
 
           <Tooltip title="Redo">
             <IconButton 
               className={classes.iconButton}
-              // onClick={handleLogout}
             >
-              <EditIcon />
+              <Icon path={mdiRedo} size={1} />
             </IconButton>
           </Tooltip>
 
@@ -608,7 +612,7 @@ function ViewerApp() {
               className={classes.iconButton}
               onClick={handleLogout}
             >
-              <EditIcon />
+              <Icon path={mdiLogout} size={1} />
             </IconButton>
           </Tooltip>
         </Box>

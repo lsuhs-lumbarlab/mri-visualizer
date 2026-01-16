@@ -1,4 +1,10 @@
 import { useState } from 'react';
+import { Alert } from '@material-ui/lab';
+import { makeStyles } from '@material-ui/core/styles';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import Icon from '@mdi/react';
+
 import {
   Paper,
   TextField,
@@ -10,11 +16,6 @@ import {
   CircularProgress,
   Tooltip,
 } from '@material-ui/core';
-import { Alert } from '@material-ui/lab';
-import { makeStyles } from '@material-ui/core/styles';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Icon from '@mdi/react';
 
 import {
   mdiEye, 

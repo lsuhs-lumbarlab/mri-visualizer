@@ -1,3 +1,6 @@
+import { makeStyles } from '@material-ui/core/styles';
+import Icon from '@mdi/react';
+
 import {
   Dialog,
   DialogTitle,
@@ -8,8 +11,8 @@ import {
   Box,
   IconButton,
 } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
-import EditIcon from '@material-ui/icons/Edit';
+
+import {mdiClose} from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
   dialogTitle: {
@@ -63,7 +66,7 @@ const InfoModal = ({ open, onClose, title, data }) => {
           className={classes.closeButton}
           onClick={onClose}
         >
-          <EditIcon />
+          <Icon path={mdiClose} size={1} />
         </IconButton>
       </DialogTitle>
       

@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import { Alert } from '@material-ui/lab';
+import Icon from '@mdi/react';
+
 import {
   Dialog,
   DialogTitle,
@@ -10,9 +14,8 @@ import {
   IconButton,
   CircularProgress,
 } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
-import { Alert } from '@material-ui/lab';
-import EditIcon from '@material-ui/icons/Edit';
+
+import {mdiClose} from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
   dialogTitle: {
@@ -115,7 +118,7 @@ const ShareModal = ({ open, onClose, onShare, title, itemType }) => {
           onClick={handleClose}
           disabled={isLoading}
         >
-          <EditIcon />
+          <Icon path={mdiClose} size={1} />
         </IconButton>
       </DialogTitle>
       
