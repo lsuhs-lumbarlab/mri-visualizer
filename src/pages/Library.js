@@ -42,7 +42,8 @@ import {
   mdiSortNumericDescending,
   mdiInformation,
   mdiShareVariant,
-  mdiMenuDown
+  mdiMenuDown,
+  mdiMenuUp
 } from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
@@ -245,7 +246,8 @@ const useStyles = makeStyles((theme) => ({
   },
   modalityButton: {
     fontSize: '0.875rem',
-    padding: theme.spacing(1, 1.5),
+    fontWeight: 400,
+    padding: theme.spacing(0.5, 1.5),
     width: 140,
     textTransform: 'none',
     justifyContent: 'space-between',
@@ -267,15 +269,22 @@ const useStyles = makeStyles((theme) => ({
     '&:focus': {
       backgroundColor: theme.palette.background.default,
       borderColor: theme.palette.primary.main,
-      borderWidth: 2,
+      boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
     },
     '&.Mui-focusVisible': {
       borderColor: theme.palette.primary.main,
+      boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
+    },
+    '&.open': {
+      backgroundColor: theme.palette.background.default,
+      borderColor: theme.palette.primary.main,
+      boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
     },
   },
   modalityPopover: {
     '& .MuiPopover-paper': {
       padding: theme.spacing(2),
+      marginTop: theme.spacing(0.1),
     },
   },
   modalityCheckbox: {
@@ -1205,12 +1214,12 @@ const Library = () => {
               
               {/* Modality filter dropdown */}
               <Button
-                className={classes.modalityButton}
+                className={`${classes.modalityButton} ${modalityPopoverOpen ? 'open' : ''}`}
                 onClick={handleModalityClick}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
                 size="small"
                 variant="outlined"
-                endIcon={<Icon path={mdiMenuDown} size={0.8} />}
+                endIcon={<Icon path={modalityPopoverOpen ? mdiMenuUp : mdiMenuDown} size={1} />}
               >
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                   {modalityFilterLabel}
@@ -1429,7 +1438,6 @@ const Library = () => {
                     onChange={() => handleModalityToggle(modality)}
                     size="small"
                     color="primary"
-                    disabled={selectedModalities.includes(modality) && selectedModalities.length === 1}
                   />
                 }
                 label={`${modality} (${count})`}
@@ -1437,14 +1445,25 @@ const Library = () => {
             ))}
           </FormGroup>
           <Box className={classes.modalityActions}>
-            <Button
-              size="small"
-              onClick={handleSelectAllModalities}
-              disabled={selectedModalities.length === availableModalities.length}
-              variant="outlined"
-            >
-              Select All
-            </Button>
+            <FormControlLabel
+              className={classes.modalityCheckbox}
+              control={
+                <Checkbox
+                  checked={
+                    availableModalities.length > 0 &&
+                    selectedModalities.length === availableModalities.length
+                  }
+                  onChange={(e) => {
+                    // Only allow checking (reset to default). Never allow "none selected".
+                    if (e.target.checked) handleSelectAllModalities();
+                  }}
+                  size="small"
+                  color="primary"
+                  disabled={availableModalities.length === 0}
+                />
+              }
+              label="Select All"
+            />
           </Box>
         </FormControl>
       </Popover>
