@@ -246,11 +246,20 @@ const useStyles = makeStyles((theme) => ({
   modalityButton: {
     fontSize: '0.875rem',
     padding: theme.spacing(1, 1.5),
-    width: 120,
+    width: 140,
     textTransform: 'none',
     justifyContent: 'space-between',
     backgroundColor: theme.palette.background.default,
     borderColor: theme.palette.divider,
+    '& .MuiButton-label': {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      width: '100%',
+    },
+    '& .MuiButton-endIcon': {
+      marginLeft: theme.spacing(0.5),
+    },
     '&:hover': {
       backgroundColor: theme.palette.background.default,
       borderColor: theme.palette.text.primary,
@@ -1203,7 +1212,9 @@ const Library = () => {
                 variant="outlined"
                 endIcon={<Icon path={mdiMenuDown} size={0.8} />}
               >
-                {modalityFilterLabel}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                  {modalityFilterLabel}
+                </span>
               </Button>
               
               <Typography className={classes.filterLabel}>From</Typography>
