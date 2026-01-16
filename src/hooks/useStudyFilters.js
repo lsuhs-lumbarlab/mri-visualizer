@@ -41,19 +41,15 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
   const [selectedModalities, setSelectedModalities] = useState([]);
   const [modalityAnchorEl, setModalityAnchorEl] = useState(null);
   
-  // Temporary filter inputs (before Apply)
-  const [tempDateFromMonth, setTempDateFromMonth] = useState('');
-  const [tempDateFromYear, setTempDateFromYear] = useState('');
-  const [tempDateToMonth, setTempDateToMonth] = useState('');
-  const [tempDateToYear, setTempDateToYear] = useState('');
+  // Temporary filter inputs (before Apply) - using Date objects for date pickers
+  const [tempDateFrom, setTempDateFrom] = useState(null);
+  const [tempDateTo, setTempDateTo] = useState(null);
   
   // Clear study search and filters when selected patient changes
   useEffect(() => {
     // Clear study date filter when switching patients
-    setTempDateFromMonth('');
-    setTempDateFromYear('');
-    setTempDateToMonth('');
-    setTempDateToYear('');
+    setTempDateFrom(null);
+    setTempDateTo(null);
     setStudyFilters({
       dateFromMonth: null,
       dateFromYear: null,
@@ -158,10 +154,20 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
   
   // Study date filter handlers - memoized to prevent unnecessary re-renders
   const handleApplyStudyDateFilter = useCallback(() => {
-    const fromMonth = tempDateFromMonth ? parseInt(tempDateFromMonth) : null;
-    const fromYear = tempDateFromYear ? parseInt(tempDateFromYear) : null;
-    const toMonth = tempDateToMonth ? parseInt(tempDateToMonth) : null;
-    const toYear = tempDateToYear ? parseInt(tempDateToYear) : null;
+    let fromMonth = null;
+    let fromYear = null;
+    let toMonth = null;
+    let toYear = null;
+    
+    if (tempDateFrom) {
+      fromMonth = tempDateFrom.getMonth() + 1; // getMonth() is 0-indexed
+      fromYear = tempDateFrom.getFullYear();
+    }
+    
+    if (tempDateTo) {
+      toMonth = tempDateTo.getMonth() + 1;
+      toYear = tempDateTo.getFullYear();
+    }
     
     // Build comparable dates (YYYYMM format for easy comparison)
     let from = null;
@@ -177,10 +183,10 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
     
     // Auto-swap if from > to
     if (from !== null && to !== null && from > to) {
-      setTempDateFromMonth(toMonth.toString());
-      setTempDateFromYear(toYear.toString());
-      setTempDateToMonth(fromMonth.toString());
-      setTempDateToYear(fromYear.toString());
+      const swappedFrom = new Date(toYear, toMonth - 1);
+      const swappedTo = new Date(fromYear, fromMonth - 1);
+      setTempDateFrom(swappedFrom);
+      setTempDateTo(swappedTo);
       
       setStudyFilters({
         dateFromMonth: toMonth,
@@ -196,13 +202,11 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
         dateToYear: toYear,
       });
     }
-  }, [tempDateFromMonth, tempDateFromYear, tempDateToMonth, tempDateToYear]);
+  }, [tempDateFrom, tempDateTo]);
   
   const handleClearStudyDateFilter = useCallback(() => {
-    setTempDateFromMonth('');
-    setTempDateFromYear('');
-    setTempDateToMonth('');
-    setTempDateToYear('');
+    setTempDateFrom(null);
+    setTempDateTo(null);
     setStudyFilters({
       dateFromMonth: null,
       dateFromYear: null,
@@ -251,17 +255,13 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
     
     // Date filter state
     studyFilters,
-    tempDateFromMonth,
-    tempDateFromYear,
-    tempDateToMonth,
-    tempDateToYear,
+    tempDateFrom,
+    tempDateTo,
     availableYears,
     
     // Date filter handlers
-    setTempDateFromMonth,
-    setTempDateFromYear,
-    setTempDateToMonth,
-    setTempDateToYear,
+    setTempDateFrom,
+    setTempDateTo,
     handleApplyStudyDateFilter,
     handleClearStudyDateFilter,
     

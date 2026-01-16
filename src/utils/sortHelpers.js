@@ -120,39 +120,6 @@ export const sortPatientsByDob = (patients, direction = 'asc') => {
 };
 
 /**
- * Parse DICOM date (YYYYMMDD) to comparable number
- * @param {string} dicomDate - Date in DICOM format (YYYYMMDD)
- * @returns {number} Comparable number (0 if invalid)
- */
-const parseDicomDateToNumber = (dicomDate) => {
-  if (!dicomDate || dicomDate === 'Unknown') return 0;
-  
-  // Parse YYYYMMDD format
-  if (typeof dicomDate === 'string' && /^\d{8}$/.test(dicomDate)) {
-    return parseInt(dicomDate);
-  }
-  
-  return 0;
-};
-
-/**
- * Parse DICOM time (HHMMSS) to comparable number
- * @param {string} dicomTime - Time in DICOM format (HHMMSS or HHMMSS.FFFFFF)
- * @returns {number} Comparable number (0 if invalid)
- */
-const parseDicomTimeToNumber = (dicomTime) => {
-  if (!dicomTime || dicomTime === 'Unknown') return 0;
-  
-  // Extract HHMMSS (ignore fractional seconds)
-  const timeStr = dicomTime.substring(0, 6);
-  if (/^\d{6}$/.test(timeStr)) {
-    return parseInt(timeStr);
-  }
-  
-  return 0;
-};
-
-/**
  * Parse formatted study date back to DICOM format for sorting
  * Study date is stored as formatted "Mmm DD, YYYY" but we need YYYYMMDD for comparison
  * @param {string} formattedDate - Formatted date string

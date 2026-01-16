@@ -10,6 +10,8 @@ import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
 import Icon from '@mdi/react';
 import { makeStyles } from '@material-ui/core/styles';
+import { MuiPickersUtilsProvider, KeyboardDatePicker } from '@material-ui/pickers';
+import DateFnsUtils from '@date-io/date-fns';
 
 import {
   Box,
@@ -42,7 +44,7 @@ import {
   mdiShareVariant,
   mdiMenuDown,
   mdiMenuUp,
-  mdiSwapVertical
+  mdiCalendar
 } from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
@@ -206,23 +208,18 @@ const useStyles = makeStyles((theme) => ({
       fontSize: '0.875rem',
     },
   },
-  filterMonthInput: {
-    width: 65,
+  filterDatePicker: {
+    width: 130,
     '& .MuiOutlinedInput-root': {
       backgroundColor: theme.palette.background.default,
+      paddingRight: 0,
     },
-    '& .MuiSelect-select': {
+    '& .MuiOutlinedInput-input': {
       padding: theme.spacing(1, 1),
+      paddingRight: 0,
       fontSize: '0.875rem',
     },
-  },
-  filterYearInput: {
-    width: 75,
-    '& .MuiOutlinedInput-root': {
-      backgroundColor: theme.palette.background.default,
-    },
-    '& .MuiSelect-select': {
-      padding: theme.spacing(1, 1),
+    '& .MuiInputBase-root': {
       fontSize: '0.875rem',
     },
   },
@@ -636,6 +633,7 @@ const Library = () => {
   };
 
   return (
+    <MuiPickersUtilsProvider utils={DateFnsUtils}>
     <Box className={classes.root}>
       {/* Header */}
       <Box className={classes.header}>
@@ -977,95 +975,51 @@ const Library = () => {
               </Button>
               
               <Typography className={classes.filterLabel}>Study Date:</Typography>
-              <Select
-                className={classes.filterMonthInput}
-                value={studyFiltersHook.tempDateFromMonth}
-                onChange={(e) => studyFiltersHook.setTempDateFromMonth(e.target.value)}
+              <KeyboardDatePicker
+                className={classes.filterDatePicker}
+                views={['year', 'month']}
+                format="MM/yyyy"
+                openTo="year"
+                value={studyFiltersHook.tempDateFrom}
+                onChange={(date) => studyFiltersHook.setTempDateFrom(date)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
-                displayEmpty
+                variant="inline"
+                inputVariant="outlined"
                 size="small"
-                variant="outlined"
-              >
-                <MenuItem value="">MM</MenuItem>
-                <MenuItem value="1">1</MenuItem>
-                <MenuItem value="2">2</MenuItem>
-                <MenuItem value="3">3</MenuItem>
-                <MenuItem value="4">4</MenuItem>
-                <MenuItem value="5">5</MenuItem>
-                <MenuItem value="6">6</MenuItem>
-                <MenuItem value="7">7</MenuItem>
-                <MenuItem value="8">8</MenuItem>
-                <MenuItem value="9">9</MenuItem>
-                <MenuItem value="10">10</MenuItem>
-                <MenuItem value="11">11</MenuItem>
-                <MenuItem value="12">12</MenuItem>
-              </Select>
-              <Select
-                className={classes.filterYearInput}
-                value={studyFiltersHook.tempDateFromYear}
-                onChange={(e) => studyFiltersHook.setTempDateFromYear(e.target.value)}
-                disabled={!selectedPatient || selectedPatient.studies.length === 0}
-                displayEmpty
-                size="small"
-                variant="outlined"
-              >
-                <MenuItem value="">YYYY</MenuItem>
-                {studyFiltersHook.availableYears.map(year => (
-                  <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
-                ))}
-              </Select>
+                autoOk
+                placeholder="MM/YYYY"
+                keyboardIcon={<Icon path={mdiCalendar} size={0.9} />}
+                KeyboardButtonProps={{
+                  'aria-label': 'change from date',
+                }}
+              />
               <Typography className={classes.filterToText}>to</Typography>
-              <Select
-                className={classes.filterMonthInput}
-                value={studyFiltersHook.tempDateToMonth}
-                onChange={(e) => studyFiltersHook.setTempDateToMonth(e.target.value)}
+              <KeyboardDatePicker
+                className={classes.filterDatePicker}
+                views={['year', 'month']}
+                format="MM/yyyy"
+                openTo="year"
+                value={studyFiltersHook.tempDateTo}
+                onChange={(date) => studyFiltersHook.setTempDateTo(date)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
-                displayEmpty
+                variant="inline"
+                inputVariant="outlined"
                 size="small"
-                variant="outlined"
-              >
-                <MenuItem value="">MM</MenuItem>
-                <MenuItem value="1">1</MenuItem>
-                <MenuItem value="2">2</MenuItem>
-                <MenuItem value="3">3</MenuItem>
-                <MenuItem value="4">4</MenuItem>
-                <MenuItem value="5">5</MenuItem>
-                <MenuItem value="6">6</MenuItem>
-                <MenuItem value="7">7</MenuItem>
-                <MenuItem value="8">8</MenuItem>
-                <MenuItem value="9">9</MenuItem>
-                <MenuItem value="10">10</MenuItem>
-                <MenuItem value="11">11</MenuItem>
-                <MenuItem value="12">12</MenuItem>
-              </Select>
-              <Select
-                className={classes.filterYearInput}
-                value={studyFiltersHook.tempDateToYear}
-                onChange={(e) => studyFiltersHook.setTempDateToYear(e.target.value)}
-                disabled={!selectedPatient || selectedPatient.studies.length === 0}
-                displayEmpty
-                size="small"
-                variant="outlined"
-              >
-                <MenuItem value="">YYYY</MenuItem>
-                {studyFiltersHook.availableYears.map(year => (
-                  <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
-                ))}
-              </Select>
+                autoOk
+                placeholder="MM/YYYY"
+                keyboardIcon={<Icon path={mdiCalendar} size={0.9} />}
+                KeyboardButtonProps={{
+                  'aria-label': 'change to date',
+                }}
+              />
               <Button
                 className={classes.filterButton}
                 onClick={studyFiltersHook.handleApplyStudyDateFilter}
                 disabled={
                   !selectedPatient || 
                   selectedPatient.studies.length === 0 ||
-                  // All fields empty
-                  (studyFiltersHook.tempDateFromMonth === '' && studyFiltersHook.tempDateFromYear === '' && studyFiltersHook.tempDateToMonth === '' && studyFiltersHook.tempDateToYear === '') ||
-                  // Incomplete From date (month without year OR year without month)
-                  (studyFiltersHook.tempDateFromMonth !== '' && studyFiltersHook.tempDateFromYear === '') ||
-                  (studyFiltersHook.tempDateFromMonth === '' && studyFiltersHook.tempDateFromYear !== '') ||
-                  // Incomplete To date (month without year OR year without month)
-                  (studyFiltersHook.tempDateToMonth !== '' && studyFiltersHook.tempDateToYear === '') ||
-                  (studyFiltersHook.tempDateToMonth === '' && studyFiltersHook.tempDateToYear !== '')
+                  // Both fields empty
+                  (!studyFiltersHook.tempDateFrom && !studyFiltersHook.tempDateTo)
                 }
                 size="small"
                 variant="contained"
@@ -1246,6 +1200,7 @@ const Library = () => {
         message={uploadModal.message}
       />
     </Box>
+    </MuiPickersUtilsProvider>
   );
 };
 
