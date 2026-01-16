@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
 import { isDicomFile } from '../services/dicomLoader';
-import { sortPatients, sortStudies } from '../utils/sortHelpers';
-import { filterPatientsByDobYear, validateYearInput, filterStudiesByDateRange, filterStudiesByModality } from '../utils/filterHelpers';
+import { usePatientFilters } from '../hooks/usePatientFilters';
+import { useStudyFilters } from '../hooks/useStudyFilters';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -315,41 +315,9 @@ const Library = () => {
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
   const [studySearchQuery, setStudySearchQuery] = useState('');
   
-  // Sort states
-  const [patientSort, setPatientSort] = useState({
-    key: 'name', // 'name' | 'dob'
-    direction: 'asc' // 'asc' | 'desc'
-  });
-  
-  const [studySort, setStudySort] = useState({
-    key: 'date', // 'date' | 'description'
-    direction: 'desc' // 'asc' | 'desc' (default newest first)
-  });
-  
-  // Filter states
-  const [patientFilters, setPatientFilters] = useState({
-    dobYearFrom: null,
-    dobYearTo: null,
-  });
-  
-  const [studyFilters, setStudyFilters] = useState({
-    dateFromMonth: null,
-    dateFromYear: null,
-    dateToMonth: null,
-    dateToYear: null,
-  });
-  
-  const [selectedModalities, setSelectedModalities] = useState([]);
-  const [modalityAnchorEl, setModalityAnchorEl] = useState(null);
-  
-  // Temporary filter inputs (before Apply)
-  const [tempDobFrom, setTempDobFrom] = useState('');
-  const [tempDobTo, setTempDobTo] = useState('');
-  
-  const [tempDateFromMonth, setTempDateFromMonth] = useState('');
-  const [tempDateFromYear, setTempDateFromYear] = useState('');
-  const [tempDateToMonth, setTempDateToMonth] = useState('');
-  const [tempDateToYear, setTempDateToYear] = useState('');
+  // Use custom hooks for filtering and sorting
+  const patientFiltersHook = usePatientFilters(patients, patientSearchQuery);
+  const studyFiltersHook = useStudyFilters(selectedPatient, studySearchQuery);
   
   // Modal states
   const [patientInfoModal, setPatientInfoModal] = useState({
@@ -391,72 +359,10 @@ const Library = () => {
     }
   }, [location.state, patients]);
 
-  // Clear study search and filters when selected patient changes
+  // Clear study search when selected patient changes
   useEffect(() => {
     setStudySearchQuery('');
-    // Clear study date filter when switching patients
-    setTempDateFromMonth('');
-    setTempDateFromYear('');
-    setTempDateToMonth('');
-    setTempDateToYear('');
-    setStudyFilters({
-      dateFromMonth: null,
-      dateFromYear: null,
-      dateToMonth: null,
-      dateToYear: null,
-    });
-    // Modality filter will auto-reset via availableModalities useEffect
   }, [selectedPatient]);
-
-  // Filtered and sorted patients
-  // Pipeline: filter by DOB → filter by search → sort
-  const sortedPatients = useMemo(() => {
-    // Step 1: Filter by DOB year range
-    let filtered = filterPatientsByDobYear(patients, patientFilters);
-    
-    // Step 2: Filter by search query
-    if (patientSearchQuery.trim()) {
-      const query = patientSearchQuery.toLowerCase().trim();
-      filtered = filtered.filter(patient => {
-        const name = patient.name.toLowerCase();
-        const patientId = patient.phiSummary.patientId.toLowerCase();
-        const mrn = patient.metadata.mrn ? patient.metadata.mrn.toLowerCase() : '';
-        
-        return name.includes(query) || patientId.includes(query) || mrn.includes(query);
-      });
-    }
-    
-    // Step 3: Sort
-    return sortPatients(filtered, patientSort);
-  }, [patients, patientFilters, patientSearchQuery, patientSort]);
-
-  // Filtered and sorted studies
-  // Pipeline: filter by date range → filter by modality → filter by search → sort
-  const sortedStudies = useMemo(() => {
-    if (!selectedPatient) return [];
-    
-    // Step 1: Filter by date range
-    let filtered = filterStudiesByDateRange(selectedPatient.studies, studyFilters);
-    
-    // Step 2: Filter by modality
-    filtered = filterStudiesByModality(filtered, selectedModalities);
-    
-    // Step 3: Filter by search query
-    if (studySearchQuery.trim()) {
-      const query = studySearchQuery.toLowerCase().trim();
-      filtered = filtered.filter(study => {
-        const description = study.description.toLowerCase();
-        const modality = study.modality.toLowerCase();
-        const studyId = study.metadata.studyID ? study.metadata.studyID.toLowerCase() : '';
-        const accessionNumber = study.metadata.accessionNumber ? study.metadata.accessionNumber.toLowerCase() : '';
-        
-        return description.includes(query) || modality.includes(query) || studyId.includes(query) || accessionNumber.includes(query);
-      });
-    }
-    
-    // Step 4: Sort
-    return sortStudies(filtered, studySort);
-  }, [selectedPatient, studyFilters, selectedModalities, studySearchQuery, studySort]);
 
   const loadPatients = async () => {
     setIsLoading(true);
@@ -586,209 +492,6 @@ const Library = () => {
     }
   };
 
-  const handleDobFromChange = (e) => {
-    const value = e.target.value;
-    setTempDobFrom(value);
-  };
-  
-  const handleDobToChange = (e) => {
-    const value = e.target.value;
-    setTempDobTo(value);
-  };
-  
-  const handleDobFromBlur = () => {
-    const validated = validateYearInput(tempDobFrom);
-    setTempDobFrom(validated);
-  };
-  
-  const handleDobToBlur = () => {
-    const validated = validateYearInput(tempDobTo);
-    setTempDobTo(validated);
-  };
-  
-  const handleApplyDobFilter = () => {
-    // Validate inputs first
-    const validatedFrom = validateYearInput(tempDobFrom);
-    const validatedTo = validateYearInput(tempDobTo);
-    
-    setTempDobFrom(validatedFrom);
-    setTempDobTo(validatedTo);
-    
-    let fromYear = validatedFrom ? parseInt(validatedFrom) : null;
-    let toYear = validatedTo ? parseInt(validatedTo) : null;
-    
-    // Auto-swap if from >= to
-    if (fromYear !== null && toYear !== null && fromYear > toYear) {
-      [fromYear, toYear] = [toYear, fromYear];
-      setTempDobFrom(fromYear.toString());
-      setTempDobTo(toYear.toString());
-    }
-    
-    setPatientFilters({
-      dobYearFrom: fromYear,
-      dobYearTo: toYear,
-    });
-  };
-  
-  const handleClearDobFilter = () => {
-    setTempDobFrom('');
-    setTempDobTo('');
-    setPatientFilters({
-      dobYearFrom: null,
-      dobYearTo: null,
-    });
-  };
-  
-  // Study date filter handlers
-  const handleApplyStudyDateFilter = () => {
-    const fromMonth = tempDateFromMonth ? parseInt(tempDateFromMonth) : null;
-    const fromYear = tempDateFromYear ? parseInt(tempDateFromYear) : null;
-    const toMonth = tempDateToMonth ? parseInt(tempDateToMonth) : null;
-    const toYear = tempDateToYear ? parseInt(tempDateToYear) : null;
-    
-    // Build comparable dates (YYYYMM format for easy comparison)
-    let from = null;
-    let to = null;
-    
-    if (fromMonth !== null && fromYear !== null) {
-      from = fromYear * 100 + fromMonth;
-    }
-    
-    if (toMonth !== null && toYear !== null) {
-      to = toYear * 100 + toMonth;
-    }
-    
-    // Auto-swap if from > to
-    if (from !== null && to !== null && from > to) {
-      setTempDateFromMonth(toMonth.toString());
-      setTempDateFromYear(toYear.toString());
-      setTempDateToMonth(fromMonth.toString());
-      setTempDateToYear(fromYear.toString());
-      
-      setStudyFilters({
-        dateFromMonth: toMonth,
-        dateFromYear: toYear,
-        dateToMonth: fromMonth,
-        dateToYear: fromYear,
-      });
-    } else {
-      setStudyFilters({
-        dateFromMonth: fromMonth,
-        dateFromYear: fromYear,
-        dateToMonth: toMonth,
-        dateToYear: toYear,
-      });
-    }
-  };
-  
-  const handleClearStudyDateFilter = () => {
-    setTempDateFromMonth('');
-    setTempDateFromYear('');
-    setTempDateToMonth('');
-    setTempDateToYear('');
-    setStudyFilters({
-      dateFromMonth: null,
-      dateFromYear: null,
-      dateToMonth: null,
-      dateToYear: null,
-    });
-  };
-  
-  // Modality filter handlers
-  const handleModalityClick = (event) => {
-    setModalityAnchorEl(event.currentTarget);
-  };
-  
-  const handleModalityClose = () => {
-    setModalityAnchorEl(null);
-  };
-  
-  const handleModalityToggle = (modality) => {
-    setSelectedModalities(prev => {
-      // If trying to uncheck and it's the last one selected, ignore
-      if (prev.includes(modality) && prev.length === 1) {
-        return prev; // Keep it checked
-      }
-      
-      if (prev.includes(modality)) {
-        return prev.filter(m => m !== modality);
-      } else {
-        return [...prev, modality];
-      }
-    });
-  };
-  
-  const handleSelectAllModalities = () => {
-    setSelectedModalities(availableModalities.map(m => m.modality));
-  };
-  
-  const modalityPopoverOpen = Boolean(modalityAnchorEl);
-  
-  // Get available years from selected patient's studies
-  const availableYears = useMemo(() => {
-    if (!selectedPatient || selectedPatient.studies.length === 0) return [];
-    
-    const years = new Set();
-    selectedPatient.studies.forEach(study => {
-      if (study.date && study.date !== 'Unknown') {
-        try {
-          const date = new Date(study.date);
-          if (!isNaN(date.getTime())) {
-            years.add(date.getFullYear());
-          }
-        } catch (e) {
-          // Skip invalid dates
-        }
-      }
-    });
-    
-    return Array.from(years).sort((a, b) => b - a); // Newest first
-  }, [selectedPatient]);
-  
-  // Get available modalities with counts from selected patient's studies
-  const availableModalities = useMemo(() => {
-    if (!selectedPatient || selectedPatient.studies.length === 0) return [];
-    
-    const modalityCounts = {};
-    selectedPatient.studies.forEach(study => {
-      if (study.modality) {
-        modalityCounts[study.modality] = (modalityCounts[study.modality] || 0) + 1;
-      }
-    });
-    
-    return Object.entries(modalityCounts)
-      .map(([modality, count]) => ({ modality, count }))
-      .sort((a, b) => a.modality.localeCompare(b.modality)); // Alphabetical
-  }, [selectedPatient]);
-  
-  // Compute modality filter label
-  const modalityFilterLabel = useMemo(() => {
-    if (selectedModalities.length === 0) return 'Modality:';
-    if (selectedModalities.length === availableModalities.length) return 'Modality: All';
-    
-    // Sort selected modalities alphabetically for consistent display
-    const sorted = [...selectedModalities].sort();
-    
-    if (sorted.length === 1) {
-      return `Modality: ${sorted[0]}`;
-    } else if (sorted.length <= 3) {
-      return `Modality: ${sorted.join(', ')}`;
-    } else {
-      const first = sorted.slice(0, 2).join(', ');
-      const remaining = sorted.length - 2;
-      return `Modality: ${first} +${remaining}`;
-    }
-  }, [selectedModalities, availableModalities]);
-  
-  // Initialize selectedModalities when patient changes or availableModalities change
-  useEffect(() => {
-    if (availableModalities.length > 0) {
-      setSelectedModalities(availableModalities.map(m => m.modality));
-    } else {
-      setSelectedModalities([]);
-    }
-  }, [availableModalities]);
-  
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
   };
@@ -928,8 +631,8 @@ const Library = () => {
               <Typography className={classes.sortLabel}>Sort by:</Typography>
               <Tooltip title="A - Z">
                 <Button
-                  className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => setPatientSort({ key: 'name', direction: 'asc' })}
+                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'name' && patientFiltersHook.patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => patientFiltersHook.setPatientSort({ key: 'name', direction: 'asc' })}
                   disabled={isLoading || patients.length === 0}
                   size="small"
                   variant="outlined"
@@ -942,8 +645,8 @@ const Library = () => {
               </Tooltip>
               <Tooltip title="Z - A">
                 <Button
-                  className={`${classes.sortButton} ${patientSort.key === 'name' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => setPatientSort({ key: 'name', direction: 'desc' })}
+                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'name' && patientFiltersHook.patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => patientFiltersHook.setPatientSort({ key: 'name', direction: 'desc' })}
                   disabled={isLoading || patients.length === 0}
                   size="small"
                   variant="outlined"
@@ -956,8 +659,8 @@ const Library = () => {
               </Tooltip>
               <Tooltip title="Oldest - Youngest">
                 <Button
-                  className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => setPatientSort({ key: 'dob', direction: 'asc' })}
+                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'dob' && patientFiltersHook.patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => patientFiltersHook.setPatientSort({ key: 'dob', direction: 'asc' })}
                   disabled={isLoading || patients.length === 0}
                   size="small"
                   variant="outlined"
@@ -970,8 +673,8 @@ const Library = () => {
               </Tooltip>
               <Tooltip title="Youngest - Oldest">
                 <Button
-                  className={`${classes.sortButton} ${patientSort.key === 'dob' && patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => setPatientSort({ key: 'dob', direction: 'desc' })}
+                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'dob' && patientFiltersHook.patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
+                  onClick={() => patientFiltersHook.setPatientSort({ key: 'dob', direction: 'desc' })}
                   disabled={isLoading || patients.length === 0}
                   size="small"
                   variant="outlined"
@@ -993,9 +696,9 @@ const Library = () => {
                 size="small"
                 type="number"
                 placeholder="Min Year"
-                value={tempDobFrom}
-                onChange={handleDobFromChange}
-                onBlur={handleDobFromBlur}
+                value={patientFiltersHook.tempDobFrom}
+                onChange={patientFiltersHook.handleDobFromChange}
+                onBlur={patientFiltersHook.handleDobFromBlur}
                 disabled={isLoading || patients.length === 0}
                 inputProps={{
                   min: 1900,
@@ -1009,9 +712,9 @@ const Library = () => {
                 size="small"
                 type="number"
                 placeholder="Max Year"
-                value={tempDobTo}
-                onChange={handleDobToChange}
-                onBlur={handleDobToBlur}
+                value={patientFiltersHook.tempDobTo}
+                onChange={patientFiltersHook.handleDobToChange}
+                onBlur={patientFiltersHook.handleDobToBlur}
                 disabled={isLoading || patients.length === 0}
                 inputProps={{
                   min: 1900,
@@ -1020,8 +723,8 @@ const Library = () => {
               />
               <Button
                 className={classes.filterButton}
-                onClick={handleApplyDobFilter}
-                disabled={isLoading || patients.length === 0 || (!tempDobFrom && !tempDobTo)}
+                onClick={patientFiltersHook.handleApplyDobFilter}
+                disabled={isLoading || patients.length === 0 || (!patientFiltersHook.tempDobFrom && !patientFiltersHook.tempDobTo)}
                 size="small"
                 variant="contained"
                 color="primary"
@@ -1030,7 +733,7 @@ const Library = () => {
               </Button>
               <Button
                 className={classes.filterButton}
-                onClick={handleClearDobFilter}
+                onClick={patientFiltersHook.handleClearDobFilter}
                 disabled={isLoading || patients.length === 0}
                 size="small"
                 variant="outlined"
@@ -1050,7 +753,7 @@ const Library = () => {
                 No DICOM studies available yet. Click 'Upload' to add your first study.
               </Typography>
             </Box>
-          ) : sortedPatients.length === 0 ? (
+          ) : patientFiltersHook.filteredPatients.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
                 No patients match your search and/or filters.
@@ -1058,7 +761,7 @@ const Library = () => {
             </Box>
           ) : (
             <Box className={classes.scrollableList}>
-              {sortedPatients.map((patient) => (
+              {patientFiltersHook.filteredPatients.map((patient) => (
                 <Card
                   key={patient.id}
                   className={`${classes.patientCard} ${
@@ -1152,8 +855,8 @@ const Library = () => {
               <Typography className={classes.sortLabel}>Sort by:</Typography>
               <Tooltip title="Newest - Oldest">
                 <Button
-                  className={`${classes.sortButton} ${studySort.key === 'date' && studySort.direction === 'desc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
-                  onClick={() => setStudySort({ key: 'date', direction: 'desc' })}
+                  className={`${classes.sortButton} ${studyFiltersHook.studySort.key === 'date' && studyFiltersHook.studySort.direction === 'desc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
+                  onClick={() => studyFiltersHook.setStudySort({ key: 'date', direction: 'desc' })}
                   disabled={!selectedPatient || selectedPatient.studies.length === 0}
                   size="small"
                   variant="outlined"
@@ -1166,8 +869,8 @@ const Library = () => {
               </Tooltip>
               <Tooltip title="Oldest - Newest">
                 <Button
-                  className={`${classes.sortButton} ${studySort.key === 'date' && studySort.direction === 'asc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
-                  onClick={() => setStudySort({ key: 'date', direction: 'asc' })}
+                  className={`${classes.sortButton} ${studyFiltersHook.studySort.key === 'date' && studyFiltersHook.studySort.direction === 'asc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
+                  onClick={() => studyFiltersHook.setStudySort({ key: 'date', direction: 'asc' })}
                   disabled={!selectedPatient || selectedPatient.studies.length === 0}
                   size="small"
                   variant="outlined"
@@ -1214,23 +917,23 @@ const Library = () => {
               
               {/* Modality filter dropdown */}
               <Button
-                className={`${classes.modalityButton} ${modalityPopoverOpen ? 'open' : ''}`}
-                onClick={handleModalityClick}
+                className={`${classes.modalityButton} ${studyFiltersHook.modalityPopoverOpen ? 'open' : ''}`}
+                onClick={studyFiltersHook.handleModalityClick}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
                 size="small"
                 variant="outlined"
-                endIcon={<Icon path={modalityPopoverOpen ? mdiMenuUp : mdiMenuDown} size={1} />}
+                endIcon={<Icon path={studyFiltersHook.modalityPopoverOpen ? mdiMenuUp : mdiMenuDown} size={1} />}
               >
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                  {modalityFilterLabel}
+                  {studyFiltersHook.modalityFilterLabel}
                 </span>
               </Button>
               
               <Typography className={classes.filterLabel}>From</Typography>
               <Select
                 className={classes.filterInput}
-                value={tempDateFromMonth}
-                onChange={(e) => setTempDateFromMonth(e.target.value)}
+                value={studyFiltersHook.tempDateFromMonth}
+                onChange={(e) => studyFiltersHook.setTempDateFromMonth(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
                 displayEmpty
                 size="small"
@@ -1252,23 +955,23 @@ const Library = () => {
               </Select>
               <Select
                 className={classes.filterInput}
-                value={tempDateFromYear}
-                onChange={(e) => setTempDateFromYear(e.target.value)}
+                value={studyFiltersHook.tempDateFromYear}
+                onChange={(e) => studyFiltersHook.setTempDateFromYear(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
                 displayEmpty
                 size="small"
                 variant="outlined"
               >
                 <MenuItem value="">Year</MenuItem>
-                {availableYears.map(year => (
+                {studyFiltersHook.availableYears.map(year => (
                   <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
                 ))}
               </Select>
               <Typography className={classes.filterToText}>To</Typography>
               <Select
                 className={classes.filterInput}
-                value={tempDateToMonth}
-                onChange={(e) => setTempDateToMonth(e.target.value)}
+                value={studyFiltersHook.tempDateToMonth}
+                onChange={(e) => studyFiltersHook.setTempDateToMonth(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
                 displayEmpty
                 size="small"
@@ -1290,32 +993,32 @@ const Library = () => {
               </Select>
               <Select
                 className={classes.filterInput}
-                value={tempDateToYear}
-                onChange={(e) => setTempDateToYear(e.target.value)}
+                value={studyFiltersHook.tempDateToYear}
+                onChange={(e) => studyFiltersHook.setTempDateToYear(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
                 displayEmpty
                 size="small"
                 variant="outlined"
               >
                 <MenuItem value="">Year</MenuItem>
-                {availableYears.map(year => (
+                {studyFiltersHook.availableYears.map(year => (
                   <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
                 ))}
               </Select>
               <Button
                 className={classes.filterButton}
-                onClick={handleApplyStudyDateFilter}
+                onClick={studyFiltersHook.handleApplyStudyDateFilter}
                 disabled={
                   !selectedPatient || 
                   selectedPatient.studies.length === 0 ||
                   // All fields empty
-                  (tempDateFromMonth === '' && tempDateFromYear === '' && tempDateToMonth === '' && tempDateToYear === '') ||
+                  (studyFiltersHook.tempDateFromMonth === '' && studyFiltersHook.tempDateFromYear === '' && studyFiltersHook.tempDateToMonth === '' && studyFiltersHook.tempDateToYear === '') ||
                   // Incomplete From date (month without year OR year without month)
-                  (tempDateFromMonth !== '' && tempDateFromYear === '') ||
-                  (tempDateFromMonth === '' && tempDateFromYear !== '') ||
+                  (studyFiltersHook.tempDateFromMonth !== '' && studyFiltersHook.tempDateFromYear === '') ||
+                  (studyFiltersHook.tempDateFromMonth === '' && studyFiltersHook.tempDateFromYear !== '') ||
                   // Incomplete To date (month without year OR year without month)
-                  (tempDateToMonth !== '' && tempDateToYear === '') ||
-                  (tempDateToMonth === '' && tempDateToYear !== '')
+                  (studyFiltersHook.tempDateToMonth !== '' && studyFiltersHook.tempDateToYear === '') ||
+                  (studyFiltersHook.tempDateToMonth === '' && studyFiltersHook.tempDateToYear !== '')
                 }
                 size="small"
                 variant="contained"
@@ -1325,7 +1028,7 @@ const Library = () => {
               </Button>
               <Button
                 className={classes.filterButton}
-                onClick={handleClearStudyDateFilter}
+                onClick={studyFiltersHook.handleClearStudyDateFilter}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
                 size="small"
                 variant="outlined"
@@ -1347,7 +1050,7 @@ const Library = () => {
                 No studies available.
               </Typography>
             </Box>
-          ) : sortedStudies.length === 0 ? (
+          ) : studyFiltersHook.filteredStudies.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
                 No studies match your search and/or filters.
@@ -1355,7 +1058,7 @@ const Library = () => {
             </Box>
           ) : (
             <Box className={classes.scrollableList}>
-              {sortedStudies.map((study) => (
+              {studyFiltersHook.filteredStudies.map((study) => (
                 <Card
                   key={study.id}
                   className={classes.studyCard}
@@ -1406,9 +1109,9 @@ const Library = () => {
 
       {/* Modality Filter Popover */}
       <Popover
-        open={modalityPopoverOpen}
-        anchorEl={modalityAnchorEl}
-        onClose={handleModalityClose}
+        open={studyFiltersHook.modalityPopoverOpen}
+        anchorEl={studyFiltersHook.modalityAnchorEl}
+        onClose={studyFiltersHook.handleModalityClose}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'left',
@@ -1422,20 +1125,20 @@ const Library = () => {
         disableEnforceFocus
         PaperProps={{
           style: {
-            width: modalityAnchorEl?.offsetWidth || 'auto',
+            width: studyFiltersHook.modalityAnchorEl?.offsetWidth || 'auto',
           },
         }}
       >
         <FormControl component="fieldset" fullWidth>
           <FormGroup>
-            {availableModalities.map(({ modality, count }) => (
+            {studyFiltersHook.availableModalities.map(({ modality, count }) => (
               <FormControlLabel
                 key={modality}
                 className={classes.modalityCheckbox}
                 control={
                   <Checkbox
-                    checked={selectedModalities.includes(modality)}
-                    onChange={() => handleModalityToggle(modality)}
+                    checked={studyFiltersHook.selectedModalities.includes(modality)}
+                    onChange={() => studyFiltersHook.handleModalityToggle(modality)}
                     size="small"
                     color="primary"
                   />
@@ -1450,16 +1153,16 @@ const Library = () => {
               control={
                 <Checkbox
                   checked={
-                    availableModalities.length > 0 &&
-                    selectedModalities.length === availableModalities.length
+                    studyFiltersHook.availableModalities.length > 0 &&
+                    studyFiltersHook.selectedModalities.length === studyFiltersHook.availableModalities.length
                   }
                   onChange={(e) => {
                     // Only allow checking (reset to default). Never allow "none selected".
-                    if (e.target.checked) handleSelectAllModalities();
+                    if (e.target.checked) studyFiltersHook.handleSelectAllModalities();
                   }}
                   size="small"
                   color="primary"
-                  disabled={availableModalities.length === 0}
+                  disabled={studyFiltersHook.availableModalities.length === 0}
                 />
               }
               label="Select All"
