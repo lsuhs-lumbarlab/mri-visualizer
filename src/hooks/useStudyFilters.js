@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { filterStudiesByDateRange, filterStudiesByModality } from '../utils/filterHelpers';
 import { sortStudies } from '../utils/sortHelpers';
 
@@ -141,8 +141,8 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
     return sortStudies(filtered, studySort);
   }, [selectedPatient, studyFilters, selectedModalities, searchQuery, studySort]);
   
-  // Study date filter handlers
-  const handleApplyStudyDateFilter = () => {
+  // Study date filter handlers - memoized to prevent unnecessary re-renders
+  const handleApplyStudyDateFilter = useCallback(() => {
     const fromMonth = tempDateFromMonth ? parseInt(tempDateFromMonth) : null;
     const fromYear = tempDateFromYear ? parseInt(tempDateFromYear) : null;
     const toMonth = tempDateToMonth ? parseInt(tempDateToMonth) : null;
@@ -181,9 +181,9 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
         dateToYear: toYear,
       });
     }
-  };
+  }, [tempDateFromMonth, tempDateFromYear, tempDateToMonth, tempDateToYear]);
   
-  const handleClearStudyDateFilter = () => {
+  const handleClearStudyDateFilter = useCallback(() => {
     setTempDateFromMonth('');
     setTempDateFromYear('');
     setTempDateToMonth('');
@@ -194,18 +194,18 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
       dateToMonth: null,
       dateToYear: null,
     });
-  };
+  }, []);
   
-  // Modality filter handlers
-  const handleModalityClick = (event) => {
+  // Modality filter handlers - memoized to prevent unnecessary re-renders
+  const handleModalityClick = useCallback((event) => {
     setModalityAnchorEl(event.currentTarget);
-  };
+  }, []);
   
-  const handleModalityClose = () => {
+  const handleModalityClose = useCallback(() => {
     setModalityAnchorEl(null);
-  };
+  }, []);
   
-  const handleModalityToggle = (modality) => {
+  const handleModalityToggle = useCallback((modality) => {
     setSelectedModalities(prev => {
       // If trying to uncheck and it's the last one selected, ignore
       if (prev.includes(modality) && prev.length === 1) {
@@ -218,13 +218,13 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
         return [...prev, modality];
       }
     });
-  };
+  }, []);
   
-  const handleSelectAllModalities = () => {
+  const handleSelectAllModalities = useCallback(() => {
     setSelectedModalities(availableModalities.map(m => m.modality));
-  };
+  }, [availableModalities]);
   
-  const modalityPopoverOpen = Boolean(modalityAnchorEl);
+  const modalityPopoverOpen = useMemo(() => Boolean(modalityAnchorEl), [modalityAnchorEl]);
   
   return {
     // Filtered data

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { filterPatientsByDobYear, validateYearInput } from '../utils/filterHelpers';
 import { sortPatients } from '../utils/sortHelpers';
 
@@ -47,28 +47,28 @@ export const usePatientFilters = (patients, searchQuery) => {
     return sortPatients(filtered, patientSort);
   }, [patients, patientFilters, searchQuery, patientSort]);
   
-  // DOB filter handlers
-  const handleDobFromChange = (e) => {
+  // DOB filter handlers - memoized to prevent unnecessary re-renders
+  const handleDobFromChange = useCallback((e) => {
     const value = e.target.value;
     setTempDobFrom(value);
-  };
+  }, []);
   
-  const handleDobToChange = (e) => {
+  const handleDobToChange = useCallback((e) => {
     const value = e.target.value;
     setTempDobTo(value);
-  };
+  }, []);
   
-  const handleDobFromBlur = () => {
+  const handleDobFromBlur = useCallback(() => {
     const validated = validateYearInput(tempDobFrom);
     setTempDobFrom(validated);
-  };
+  }, [tempDobFrom]);
   
-  const handleDobToBlur = () => {
+  const handleDobToBlur = useCallback(() => {
     const validated = validateYearInput(tempDobTo);
     setTempDobTo(validated);
-  };
+  }, [tempDobTo]);
   
-  const handleApplyDobFilter = () => {
+  const handleApplyDobFilter = useCallback(() => {
     // Validate inputs first
     const validatedFrom = validateYearInput(tempDobFrom);
     const validatedTo = validateYearInput(tempDobTo);
@@ -90,16 +90,16 @@ export const usePatientFilters = (patients, searchQuery) => {
       dobYearFrom: fromYear,
       dobYearTo: toYear,
     });
-  };
+  }, [tempDobFrom, tempDobTo]);
   
-  const handleClearDobFilter = () => {
+  const handleClearDobFilter = useCallback(() => {
     setTempDobFrom('');
     setTempDobTo('');
     setPatientFilters({
       dobYearFrom: null,
       dobYearTo: null,
     });
-  };
+  }, []);
   
   return {
     // Filtered data
