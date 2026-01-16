@@ -1,3 +1,16 @@
+/**
+ * usePatientFilters Hook
+ * 
+ * Manages all patient filtering, sorting, and search functionality.
+ * Encapsulates the complete patient list management logic including:
+ * - Patient sorting (by name or date of birth)
+ * - DOB year range filtering
+ * - Search query filtering
+ * - Filter application and clearing
+ * 
+ * @module hooks/usePatientFilters
+ */
+
 import { useState, useMemo, useCallback } from 'react';
 import { filterPatientsByDobYear, validateYearInput } from '../utils/filterHelpers';
 import { sortPatients } from '../utils/sortHelpers';

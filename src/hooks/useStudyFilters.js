@@ -1,3 +1,18 @@
+/**
+ * useStudyFilters Hook
+ * 
+ * Manages all study filtering, sorting, and search functionality for a selected patient.
+ * Encapsulates the complete study list management logic including:
+ * - Study sorting (by date or description)
+ * - Date range filtering (month/year)
+ * - Modality filtering (multi-select)
+ * - Search query filtering
+ * - Auto-reset filters when patient changes
+ * - Available years and modalities calculation
+ * 
+ * @module hooks/useStudyFilters
+ */
+
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { filterStudiesByDateRange, filterStudiesByModality } from '../utils/filterHelpers';
 import { sortStudies } from '../utils/sortHelpers';

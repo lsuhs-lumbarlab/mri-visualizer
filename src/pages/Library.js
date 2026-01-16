@@ -36,14 +36,13 @@ import {
   mdiLogout,
   mdiMagnify,
   mdiClose,
-  mdiSortAlphabeticalAscending, 
-  mdiSortAlphabeticalDescending,
-  mdiSortNumericAscending,
-  mdiSortNumericDescending,
+  mdiSortAscending,
+  mdiSortDescending,
   mdiInformation,
   mdiShareVariant,
   mdiMenuDown,
-  mdiMenuUp
+  mdiMenuUp,
+  mdiSwapVertical
 } from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
@@ -207,6 +206,26 @@ const useStyles = makeStyles((theme) => ({
       fontSize: '0.875rem',
     },
   },
+  filterMonthInput: {
+    width: 85,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+    '& .MuiSelect-select': {
+      padding: theme.spacing(1, 1),
+      fontSize: '0.875rem',
+    },
+  },
+  filterYearInput: {
+    width: 71,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+    '& .MuiSelect-select': {
+      padding: theme.spacing(1, 1),
+      fontSize: '0.875rem',
+    },
+  },
   filterToText: {
     color: theme.palette.text.secondary,
     fontSize: '0.875rem',
@@ -221,6 +240,26 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.text.secondary,
     fontSize: '0.875rem',
     whiteSpace: 'nowrap',
+  },
+  patientSortSelect: {
+    width: 130,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+    '& .MuiSelect-select': {
+      padding: theme.spacing(1, 1),
+      fontSize: '0.875rem',
+    },
+  },
+  studySortSelect: {
+    width: 120,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+    '& .MuiSelect-select': {
+      padding: theme.spacing(1, 1),
+      fontSize: '0.875rem',
+    },
   },
   sortButton: {
     fontSize: '0.875rem',
@@ -364,6 +403,10 @@ const Library = () => {
     setStudySearchQuery('');
   }, [selectedPatient]);
 
+  /**
+   * Load all accessible patients from the library service
+   * Updates patients state and handles loading state
+   */
   const loadPatients = async () => {
     setIsLoading(true);
     try {
@@ -378,11 +421,18 @@ const Library = () => {
     }
   };
 
+  /**
+   * Handle user logout and redirect to login page
+   */
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
+  /**
+   * Trigger folder picker for DICOM file upload
+   * Creates a hidden file input with directory selection enabled
+   */
   const handleUpload = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -399,6 +449,11 @@ const Library = () => {
     input.click();
   };
 
+  /**
+   * Process selected files for DICOM upload
+   * Filters for valid DICOM files, uploads them, and updates UI with progress
+   * @param {File[]} files - Array of files from directory selection
+   */
   const processUpload = async (files) => {
     // Filter DICOM files
     const dicomFiles = [];
@@ -506,6 +561,10 @@ const Library = () => {
     setShareModal({ open: true, type: 'patient', item: patient });
   };
 
+  /**
+   * Open study in viewer in a new browser tab
+   * @param {Object} study - Study object with id
+   */
   const handleStudyClick = (study) => {
     // Open viewer in a new tab
     const base = `${window.location.origin}${process.env.PUBLIC_URL || ''}`;
@@ -523,6 +582,11 @@ const Library = () => {
     setShareModal({ open: true, type: 'study', item: study });
   };
 
+  /**
+   * Share patient or study with another user via email
+   * @param {string} email - Target user's email address
+   * @returns {Promise<Object>} Result object with success status and message
+   */
   const handleShare = async (email) => {
     const { type, item } = shareModal;
     
@@ -535,7 +599,11 @@ const Library = () => {
     return { success: false, message: 'Invalid share type' };
   };
 
-  // Prepare patient info data for modal
+  /**
+   * Transform patient object into display-ready key-value pairs for info modal
+   * @param {Object} patient - Patient object
+   * @returns {Object} Key-value pairs for display
+   */
   const getPatientInfoData = (patient) => {
     if (!patient) return {};
     return {
@@ -548,7 +616,11 @@ const Library = () => {
     };
   };
 
-  // Prepare study info data for modal
+  /**
+   * Transform study object into display-ready key-value pairs for info modal
+   * @param {Object} study - Study object
+   * @returns {Object} Key-value pairs for display
+   */
   const getStudyInfoData = (study) => {
     if (!study) return {};
     return {
@@ -629,61 +701,48 @@ const Library = () => {
             {/* Left side - Sort controls */}
             <Box className={classes.sortLeft}>
               <Typography className={classes.sortLabel}>Sort by:</Typography>
-              <Tooltip title="A - Z">
-                <Button
-                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'name' && patientFiltersHook.patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => patientFiltersHook.setPatientSort({ key: 'name', direction: 'asc' })}
+              <Select
+                className={classes.patientSortSelect}
+                value={patientFiltersHook.patientSort.key}
+                onChange={(e) => {
+                  patientFiltersHook.setPatientSort({ 
+                    key: e.target.value, 
+                    direction: patientFiltersHook.patientSort.direction 
+                  });
+                }}
+                disabled={isLoading || patients.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="dob">Date of Birth</MenuItem>
+              </Select>
+              <Tooltip title={
+                (() => {
+                  const { key, direction } = patientFiltersHook.patientSort;
+                  if (key === 'name') {
+                    return direction === 'asc' ? 'A - Z' : 'Z - A';
+                  } else if (key === 'dob') {
+                    return direction === 'asc' ? 'Oldest - Youngest' : 'Youngest - Oldest';
+                  }
+                  return '';
+                })()
+              }>
+                <IconButton
+                  onClick={() => {
+                    patientFiltersHook.setPatientSort({
+                      key: patientFiltersHook.patientSort.key,
+                      direction: patientFiltersHook.patientSort.direction === 'asc' ? 'desc' : 'asc'
+                    });
+                  }}
                   disabled={isLoading || patients.length === 0}
                   size="small"
-                  variant="outlined"
                 >
-                  Name
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortAlphabeticalAscending} size={1}/>
-                  </span>
-                </Button>
-              </Tooltip>
-              <Tooltip title="Z - A">
-                <Button
-                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'name' && patientFiltersHook.patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => patientFiltersHook.setPatientSort({ key: 'name', direction: 'desc' })}
-                  disabled={isLoading || patients.length === 0}
-                  size="small"
-                  variant="outlined"
-                >
-                  Name
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortAlphabeticalDescending} size={1.0}/>
-                  </span>
-                </Button>
-              </Tooltip>
-              <Tooltip title="Oldest - Youngest">
-                <Button
-                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'dob' && patientFiltersHook.patientSort.direction === 'asc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => patientFiltersHook.setPatientSort({ key: 'dob', direction: 'asc' })}
-                  disabled={isLoading || patients.length === 0}
-                  size="small"
-                  variant="outlined"
-                >
-                  DOB
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortNumericAscending} size={1}/>
-                  </span>
-                </Button>
-              </Tooltip>
-              <Tooltip title="Youngest - Oldest">
-                <Button
-                  className={`${classes.sortButton} ${patientFiltersHook.patientSort.key === 'dob' && patientFiltersHook.patientSort.direction === 'desc' && !isLoading && patients.length > 0 ? 'active' : ''}`}
-                  onClick={() => patientFiltersHook.setPatientSort({ key: 'dob', direction: 'desc' })}
-                  disabled={isLoading || patients.length === 0}
-                  size="small"
-                  variant="outlined"
-                >
-                  DOB
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortNumericDescending} size={1}/>
-                  </span>
-                </Button>
+                  <Icon 
+                    path={patientFiltersHook.patientSort.direction === 'asc' ? mdiSortAscending : mdiSortDescending} 
+                    size={1} 
+                  />
+                </IconButton>
               </Tooltip>
             </Box>
             
@@ -853,62 +912,49 @@ const Library = () => {
           <Box className={classes.sortContainer}>
             <Box className={classes.sortLeft}>
               <Typography className={classes.sortLabel}>Sort by:</Typography>
-              <Tooltip title="Newest - Oldest">
-                <Button
-                  className={`${classes.sortButton} ${studyFiltersHook.studySort.key === 'date' && studyFiltersHook.studySort.direction === 'desc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
-                  onClick={() => studyFiltersHook.setStudySort({ key: 'date', direction: 'desc' })}
+              <Select
+                className={classes.studySortSelect}
+                value={studyFiltersHook.studySort.key}
+                onChange={(e) => {
+                  studyFiltersHook.setStudySort({ 
+                    key: e.target.value, 
+                    direction: studyFiltersHook.studySort.direction 
+                  });
+                }}
+                disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                size="small"
+                variant="outlined"
+              >
+                <MenuItem value="date">Date</MenuItem>
+                <MenuItem value="description">Description</MenuItem>
+              </Select>
+              <Tooltip title={
+                (() => {
+                  const { key, direction } = studyFiltersHook.studySort;
+                  if (key === 'date') {
+                    return direction === 'asc' ? 'Oldest - Newest' : 'Newest - Oldest';
+                  } else if (key === 'description') {
+                    return direction === 'asc' ? 'A - Z' : 'Z - A';
+                  }
+                  return '';
+                })()
+              }>
+                <IconButton
+                  onClick={() => {
+                    studyFiltersHook.setStudySort({
+                      key: studyFiltersHook.studySort.key,
+                      direction: studyFiltersHook.studySort.direction === 'asc' ? 'desc' : 'asc'
+                    });
+                  }}
                   disabled={!selectedPatient || selectedPatient.studies.length === 0}
                   size="small"
-                  variant="outlined"
                 >
-                  Date
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortNumericDescending} size={1}/>
-                  </span>
-                </Button>
+                  <Icon 
+                    path={studyFiltersHook.studySort.direction === 'asc' ? mdiSortAscending : mdiSortDescending} 
+                    size={1} 
+                  />
+                </IconButton>
               </Tooltip>
-              <Tooltip title="Oldest - Newest">
-                <Button
-                  className={`${classes.sortButton} ${studyFiltersHook.studySort.key === 'date' && studyFiltersHook.studySort.direction === 'asc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
-                  onClick={() => studyFiltersHook.setStudySort({ key: 'date', direction: 'asc' })}
-                  disabled={!selectedPatient || selectedPatient.studies.length === 0}
-                  size="small"
-                  variant="outlined"
-                >
-                  Date
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortNumericAscending} size={1}/>
-                  </span>
-                </Button>
-              </Tooltip>
-              {/* <Tooltip title="A - Z">
-                <Button
-                  className={`${classes.sortButton} ${studySort.key === 'description' && studySort.direction === 'asc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
-                  onClick={() => setStudySort({ key: 'description', direction: 'asc' })}
-                  disabled={!selectedPatient || selectedPatient.studies.length === 0}
-                  size="small"
-                  variant="outlined"
-                >
-                  Description
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortAlphabeticalAscending} size={1}/>
-                  </span>
-                </Button>
-              </Tooltip>
-              <Tooltip title="Z - A">
-                <Button
-                  className={`${classes.sortButton} ${studySort.key === 'description' && studySort.direction === 'desc' && selectedPatient && selectedPatient.studies.length > 0 ? 'active' : ''}`}
-                  onClick={() => setStudySort({ key: 'description', direction: 'desc' })}
-                  disabled={!selectedPatient || selectedPatient.studies.length === 0}
-                  size="small"
-                  variant="outlined"
-                >
-                  Description
-                  <span className={classes.sortIcon}>
-                    <Icon path={mdiSortAlphabeticalDescending} size={1}/>
-                  </span>
-                </Button>
-              </Tooltip> */}
             </Box>
             
             {/* Study date filter - right aligned */}
@@ -931,7 +977,7 @@ const Library = () => {
               
               <Typography className={classes.filterLabel}>From</Typography>
               <Select
-                className={classes.filterInput}
+                className={classes.filterMonthInput}
                 value={studyFiltersHook.tempDateFromMonth}
                 onChange={(e) => studyFiltersHook.setTempDateFromMonth(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
@@ -954,7 +1000,7 @@ const Library = () => {
                 <MenuItem value="12">Dec</MenuItem>
               </Select>
               <Select
-                className={classes.filterInput}
+                className={classes.filterYearInput}
                 value={studyFiltersHook.tempDateFromYear}
                 onChange={(e) => studyFiltersHook.setTempDateFromYear(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
@@ -969,7 +1015,7 @@ const Library = () => {
               </Select>
               <Typography className={classes.filterToText}>To</Typography>
               <Select
-                className={classes.filterInput}
+                className={classes.filterMonthInput}
                 value={studyFiltersHook.tempDateToMonth}
                 onChange={(e) => studyFiltersHook.setTempDateToMonth(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
@@ -992,7 +1038,7 @@ const Library = () => {
                 <MenuItem value="12">Dec</MenuItem>
               </Select>
               <Select
-                className={classes.filterInput}
+                className={classes.filterYearInput}
                 value={studyFiltersHook.tempDateToYear}
                 onChange={(e) => studyFiltersHook.setTempDateToYear(e.target.value)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
