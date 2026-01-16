@@ -245,15 +245,28 @@ const useStyles = makeStyles((theme) => ({
   },
   modalityButton: {
     fontSize: '0.875rem',
-    padding: theme.spacing(0.5, 1.5),
-    minWidth: 120,
+    padding: theme.spacing(1, 1.5),
+    width: 120,
     textTransform: 'none',
     justifyContent: 'space-between',
+    backgroundColor: theme.palette.background.default,
+    borderColor: theme.palette.divider,
+    '&:hover': {
+      backgroundColor: theme.palette.background.default,
+      borderColor: theme.palette.text.primary,
+    },
+    '&:focus': {
+      backgroundColor: theme.palette.background.default,
+      borderColor: theme.palette.primary.main,
+      borderWidth: 2,
+    },
+    '&.Mui-focusVisible': {
+      borderColor: theme.palette.primary.main,
+    },
   },
   modalityPopover: {
     '& .MuiPopover-paper': {
       padding: theme.spacing(2),
-      minWidth: 200,
     },
   },
   modalityCheckbox: {
@@ -674,6 +687,11 @@ const Library = () => {
   
   const handleModalityToggle = (modality) => {
     setSelectedModalities(prev => {
+      // If trying to uncheck and it's the last one selected, ignore
+      if (prev.includes(modality) && prev.length === 1) {
+        return prev; // Keep it checked
+      }
+      
       if (prev.includes(modality)) {
         return prev.filter(m => m !== modality);
       } else {
@@ -684,10 +702,6 @@ const Library = () => {
   
   const handleSelectAllModalities = () => {
     setSelectedModalities(availableModalities.map(m => m.modality));
-  };
-  
-  const handleClearAllModalities = () => {
-    setSelectedModalities([]);
   };
   
   const modalityPopoverOpen = Boolean(modalityAnchorEl);
@@ -728,6 +742,25 @@ const Library = () => {
       .map(([modality, count]) => ({ modality, count }))
       .sort((a, b) => a.modality.localeCompare(b.modality)); // Alphabetical
   }, [selectedPatient]);
+  
+  // Compute modality filter label
+  const modalityFilterLabel = useMemo(() => {
+    if (selectedModalities.length === 0) return 'Modality:';
+    if (selectedModalities.length === availableModalities.length) return 'Modality: All';
+    
+    // Sort selected modalities alphabetically for consistent display
+    const sorted = [...selectedModalities].sort();
+    
+    if (sorted.length === 1) {
+      return `Modality: ${sorted[0]}`;
+    } else if (sorted.length <= 3) {
+      return `Modality: ${sorted.join(', ')}`;
+    } else {
+      const first = sorted.slice(0, 2).join(', ');
+      const remaining = sorted.length - 2;
+      return `Modality: ${first} +${remaining}`;
+    }
+  }, [selectedModalities, availableModalities]);
   
   // Initialize selectedModalities when patient changes or availableModalities change
   useEffect(() => {
@@ -1170,7 +1203,7 @@ const Library = () => {
                 variant="outlined"
                 endIcon={<Icon path={mdiMenuDown} size={0.8} />}
               >
-                Modality ({selectedModalities.length}/{availableModalities.length})
+                {modalityFilterLabel}
               </Button>
               
               <Typography className={classes.filterLabel}>From</Typography>
@@ -1365,8 +1398,15 @@ const Library = () => {
           horizontal: 'left',
         }}
         className={classes.modalityPopover}
+        disableAutoFocus
+        disableEnforceFocus
+        PaperProps={{
+          style: {
+            width: modalityAnchorEl?.offsetWidth || 'auto',
+          },
+        }}
       >
-        <FormControl component="fieldset">
+        <FormControl component="fieldset" fullWidth>
           <FormGroup>
             {availableModalities.map(({ modality, count }) => (
               <FormControlLabel
@@ -1377,6 +1417,8 @@ const Library = () => {
                     checked={selectedModalities.includes(modality)}
                     onChange={() => handleModalityToggle(modality)}
                     size="small"
+                    color="primary"
+                    disabled={selectedModalities.includes(modality) && selectedModalities.length === 1}
                   />
                 }
                 label={`${modality} (${count})`}
@@ -1388,15 +1430,9 @@ const Library = () => {
               size="small"
               onClick={handleSelectAllModalities}
               disabled={selectedModalities.length === availableModalities.length}
+              variant="outlined"
             >
               Select All
-            </Button>
-            <Button
-              size="small"
-              onClick={handleClearAllModalities}
-              disabled={selectedModalities.length === 0}
-            >
-              Clear
             </Button>
           </Box>
         </FormControl>
