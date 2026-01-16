@@ -149,3 +149,23 @@ export const filterStudiesByDateRange = (studies, filters) => {
     return true;
   });
 };
+
+/**
+ * Filter studies by selected modalities
+ * @param {Array} studies - Array of study objects
+ * @param {Array} selectedModalities - Array of selected modality strings (e.g., ['MR', 'CT'])
+ * @returns {Array} Filtered studies
+ */
+export const filterStudiesByModality = (studies, selectedModalities) => {
+  if (!studies || studies.length === 0) return [];
+  
+  // If no modalities selected or selectedModalities is empty, return empty array
+  if (!selectedModalities || selectedModalities.length === 0) {
+    return [];
+  }
+  
+  return studies.filter(study => {
+    if (!study.modality) return false;
+    return selectedModalities.includes(study.modality);
+  });
+};

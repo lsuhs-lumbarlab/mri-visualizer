@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import libraryService from '../services/libraryService';
 import { isDicomFile } from '../services/dicomLoader';
 import { sortPatients, sortStudies } from '../utils/sortHelpers';
-import { filterPatientsByDobYear, validateYearInput, filterStudiesByDateRange } from '../utils/filterHelpers';
+import { filterPatientsByDobYear, validateYearInput, filterStudiesByDateRange, filterStudiesByModality } from '../utils/filterHelpers';
 import InfoModal from '../components/InfoModal';
 import ShareModal from '../components/ShareModal';
 import UploadModal from '../components/UploadModal';
@@ -24,6 +24,11 @@ import {
   Button,
   Select,
   MenuItem,
+  FormControl,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  Popover,
 } from '@material-ui/core';
 
 import { 
@@ -36,7 +41,8 @@ import {
   mdiSortNumericAscending,
   mdiSortNumericDescending,
   mdiInformation,
-  mdiShareVariant
+  mdiShareVariant,
+  mdiMenuDown
 } from '@mdi/js';
 
 const useStyles = makeStyles((theme) => ({
@@ -237,6 +243,31 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
   },
+  modalityButton: {
+    fontSize: '0.875rem',
+    padding: theme.spacing(0.5, 1.5),
+    minWidth: 120,
+    textTransform: 'none',
+    justifyContent: 'space-between',
+  },
+  modalityPopover: {
+    '& .MuiPopover-paper': {
+      padding: theme.spacing(2),
+      minWidth: 200,
+    },
+  },
+  modalityCheckbox: {
+    '& .MuiFormControlLabel-label': {
+      fontSize: '0.875rem',
+    },
+  },
+  modalityActions: {
+    display: 'flex',
+    gap: theme.spacing(1),
+    marginTop: theme.spacing(1),
+    paddingTop: theme.spacing(1),
+    borderTop: `1px solid ${theme.palette.divider}`,
+  },
 }));
 
 const Library = () => {
@@ -276,6 +307,9 @@ const Library = () => {
     dateToMonth: null,
     dateToYear: null,
   });
+  
+  const [selectedModalities, setSelectedModalities] = useState([]);
+  const [modalityAnchorEl, setModalityAnchorEl] = useState(null);
   
   // Temporary filter inputs (before Apply)
   const [tempDobFrom, setTempDobFrom] = useState('');
@@ -326,9 +360,21 @@ const Library = () => {
     }
   }, [location.state, patients]);
 
-  // Clear study search when selected patient changes
+  // Clear study search and filters when selected patient changes
   useEffect(() => {
     setStudySearchQuery('');
+    // Clear study date filter when switching patients
+    setTempDateFromMonth('');
+    setTempDateFromYear('');
+    setTempDateToMonth('');
+    setTempDateToYear('');
+    setStudyFilters({
+      dateFromMonth: null,
+      dateFromYear: null,
+      dateToMonth: null,
+      dateToYear: null,
+    });
+    // Modality filter will auto-reset via availableModalities useEffect
   }, [selectedPatient]);
 
   // Filtered and sorted patients
@@ -354,14 +400,17 @@ const Library = () => {
   }, [patients, patientFilters, patientSearchQuery, patientSort]);
 
   // Filtered and sorted studies
-  // Pipeline: filter by date range → filter by search → sort
+  // Pipeline: filter by date range → filter by modality → filter by search → sort
   const sortedStudies = useMemo(() => {
     if (!selectedPatient) return [];
     
     // Step 1: Filter by date range
     let filtered = filterStudiesByDateRange(selectedPatient.studies, studyFilters);
     
-    // Step 2: Filter by search query
+    // Step 2: Filter by modality
+    filtered = filterStudiesByModality(filtered, selectedModalities);
+    
+    // Step 3: Filter by search query
     if (studySearchQuery.trim()) {
       const query = studySearchQuery.toLowerCase().trim();
       filtered = filtered.filter(study => {
@@ -374,9 +423,9 @@ const Library = () => {
       });
     }
     
-    // Step 3: Sort
+    // Step 4: Sort
     return sortStudies(filtered, studySort);
-  }, [selectedPatient, studyFilters, studySearchQuery, studySort]);
+  }, [selectedPatient, studyFilters, selectedModalities, studySearchQuery, studySort]);
 
   const loadPatients = async () => {
     setIsLoading(true);
@@ -614,6 +663,35 @@ const Library = () => {
     });
   };
   
+  // Modality filter handlers
+  const handleModalityClick = (event) => {
+    setModalityAnchorEl(event.currentTarget);
+  };
+  
+  const handleModalityClose = () => {
+    setModalityAnchorEl(null);
+  };
+  
+  const handleModalityToggle = (modality) => {
+    setSelectedModalities(prev => {
+      if (prev.includes(modality)) {
+        return prev.filter(m => m !== modality);
+      } else {
+        return [...prev, modality];
+      }
+    });
+  };
+  
+  const handleSelectAllModalities = () => {
+    setSelectedModalities(availableModalities.map(m => m.modality));
+  };
+  
+  const handleClearAllModalities = () => {
+    setSelectedModalities([]);
+  };
+  
+  const modalityPopoverOpen = Boolean(modalityAnchorEl);
+  
   // Get available years from selected patient's studies
   const availableYears = useMemo(() => {
     if (!selectedPatient || selectedPatient.studies.length === 0) return [];
@@ -634,6 +712,31 @@ const Library = () => {
     
     return Array.from(years).sort((a, b) => b - a); // Newest first
   }, [selectedPatient]);
+  
+  // Get available modalities with counts from selected patient's studies
+  const availableModalities = useMemo(() => {
+    if (!selectedPatient || selectedPatient.studies.length === 0) return [];
+    
+    const modalityCounts = {};
+    selectedPatient.studies.forEach(study => {
+      if (study.modality) {
+        modalityCounts[study.modality] = (modalityCounts[study.modality] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(modalityCounts)
+      .map(([modality, count]) => ({ modality, count }))
+      .sort((a, b) => a.modality.localeCompare(b.modality)); // Alphabetical
+  }, [selectedPatient]);
+  
+  // Initialize selectedModalities when patient changes or availableModalities change
+  useEffect(() => {
+    if (availableModalities.length > 0) {
+      setSelectedModalities(availableModalities.map(m => m.modality));
+    } else {
+      setSelectedModalities([]);
+    }
+  }, [availableModalities]);
   
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
@@ -899,7 +1002,7 @@ const Library = () => {
           ) : sortedPatients.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
-                No results match your current search and filters.
+                No patients match your search and/or filters.
               </Typography>
             </Box>
           ) : (
@@ -1057,6 +1160,19 @@ const Library = () => {
             {/* Study date filter - right aligned */}
             <Box className={classes.filterRight}>
               <Typography className={classes.filterLabel}>Filter:</Typography>
+              
+              {/* Modality filter dropdown */}
+              <Button
+                className={classes.modalityButton}
+                onClick={handleModalityClick}
+                disabled={!selectedPatient || selectedPatient.studies.length === 0}
+                size="small"
+                variant="outlined"
+                endIcon={<Icon path={mdiMenuDown} size={0.8} />}
+              >
+                Modality ({selectedModalities.length}/{availableModalities.length})
+              </Button>
+              
               <Typography className={classes.filterLabel}>From</Typography>
               <Select
                 className={classes.filterInput}
@@ -1139,7 +1255,14 @@ const Library = () => {
                 disabled={
                   !selectedPatient || 
                   selectedPatient.studies.length === 0 ||
-                  (tempDateFromMonth === '' && tempDateFromYear === '' && tempDateToMonth === '' && tempDateToYear === '')
+                  // All fields empty
+                  (tempDateFromMonth === '' && tempDateFromYear === '' && tempDateToMonth === '' && tempDateToYear === '') ||
+                  // Incomplete From date (month without year OR year without month)
+                  (tempDateFromMonth !== '' && tempDateFromYear === '') ||
+                  (tempDateFromMonth === '' && tempDateFromYear !== '') ||
+                  // Incomplete To date (month without year OR year without month)
+                  (tempDateToMonth !== '' && tempDateToYear === '') ||
+                  (tempDateToMonth === '' && tempDateToYear !== '')
                 }
                 size="small"
                 variant="contained"
@@ -1174,7 +1297,7 @@ const Library = () => {
           ) : sortedStudies.length === 0 ? (
             <Box className={classes.emptyState}>
               <Typography variant="body1" className={classes.emptyStateText}>
-                No studies match your search.
+                No studies match your search and/or filters.
               </Typography>
             </Box>
           ) : (
@@ -1227,6 +1350,57 @@ const Library = () => {
           )}
         </Box>
       </Box>
+
+      {/* Modality Filter Popover */}
+      <Popover
+        open={modalityPopoverOpen}
+        anchorEl={modalityAnchorEl}
+        onClose={handleModalityClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        className={classes.modalityPopover}
+      >
+        <FormControl component="fieldset">
+          <FormGroup>
+            {availableModalities.map(({ modality, count }) => (
+              <FormControlLabel
+                key={modality}
+                className={classes.modalityCheckbox}
+                control={
+                  <Checkbox
+                    checked={selectedModalities.includes(modality)}
+                    onChange={() => handleModalityToggle(modality)}
+                    size="small"
+                  />
+                }
+                label={`${modality} (${count})`}
+              />
+            ))}
+          </FormGroup>
+          <Box className={classes.modalityActions}>
+            <Button
+              size="small"
+              onClick={handleSelectAllModalities}
+              disabled={selectedModalities.length === availableModalities.length}
+            >
+              Select All
+            </Button>
+            <Button
+              size="small"
+              onClick={handleClearAllModalities}
+              disabled={selectedModalities.length === 0}
+            >
+              Clear
+            </Button>
+          </Box>
+        </FormControl>
+      </Popover>
 
       {/* Patient Info Modal */}
       <InfoModal
