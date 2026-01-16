@@ -113,7 +113,6 @@ const ShareModal = ({ open, onClose, onShare, title, itemType }) => {
           {title || 'SHARE WITH'}
         </Typography>
         <IconButton
-          aria-label="close"
           className={classes.closeButton}
           onClick={handleClose}
           disabled={isLoading}

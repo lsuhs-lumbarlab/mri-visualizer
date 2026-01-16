@@ -102,20 +102,20 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
   
   // Compute modality filter label
   const modalityFilterLabel = useMemo(() => {
-    if (selectedModalities.length === 0) return 'Modality:';
-    if (selectedModalities.length === availableModalities.length) return 'Modality: All';
+    if (selectedModalities.length === 0) return 'All';
+    if (selectedModalities.length === availableModalities.length) return 'All';
     
     // Sort selected modalities alphabetically for consistent display
     const sorted = [...selectedModalities].sort();
     
     if (sorted.length === 1) {
-      return `Modality: ${sorted[0]}`;
+      return sorted[0];
     } else if (sorted.length <= 3) {
-      return `Modality: ${sorted.join(', ')}`;
+      return sorted.join(', ');
     } else {
       const first = sorted.slice(0, 2).join(', ');
       const remaining = sorted.length - 2;
-      return `Modality: ${first} +${remaining}`;
+      return `${first} +${remaining}`;
     }
   }, [selectedModalities, availableModalities]);
   

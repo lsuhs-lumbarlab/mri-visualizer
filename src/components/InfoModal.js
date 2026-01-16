@@ -62,7 +62,6 @@ const InfoModal = ({ open, onClose, title, data }) => {
       <DialogTitle disableTypography className={classes.dialogTitle}>
         <Typography variant="h6" className={classes.titleText}>{title}</Typography>
         <IconButton
-          aria-label="close"
           className={classes.closeButton}
           onClick={onClose}
         >

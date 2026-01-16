@@ -207,7 +207,7 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   filterMonthInput: {
-    width: 85,
+    width: 65,
     '& .MuiOutlinedInput-root': {
       backgroundColor: theme.palette.background.default,
     },
@@ -217,7 +217,7 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   filterYearInput: {
-    width: 71,
+    width: 75,
     '& .MuiOutlinedInput-root': {
       backgroundColor: theme.palette.background.default,
     },
@@ -287,7 +287,7 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.875rem',
     fontWeight: 400,
     padding: theme.spacing(0.5, 1.5),
-    width: 140,
+    width: 80,
     textTransform: 'none',
     justifyContent: 'space-between',
     backgroundColor: theme.palette.background.default,
@@ -324,6 +324,7 @@ const useStyles = makeStyles((theme) => ({
     '& .MuiPopover-paper': {
       padding: theme.spacing(2),
       marginTop: theme.spacing(0.1),
+      width: 135,
     },
   },
   modalityCheckbox: {
@@ -959,7 +960,7 @@ const Library = () => {
             
             {/* Study date filter - right aligned */}
             <Box className={classes.filterRight}>
-              <Typography className={classes.filterLabel}>Filter:</Typography>
+              <Typography className={classes.filterLabel}>Modality:</Typography>
               
               {/* Modality filter dropdown */}
               <Button
@@ -975,7 +976,7 @@ const Library = () => {
                 </span>
               </Button>
               
-              <Typography className={classes.filterLabel}>From</Typography>
+              <Typography className={classes.filterLabel}>Study Date:</Typography>
               <Select
                 className={classes.filterMonthInput}
                 value={studyFiltersHook.tempDateFromMonth}
@@ -985,19 +986,19 @@ const Library = () => {
                 size="small"
                 variant="outlined"
               >
-                <MenuItem value="">Month</MenuItem>
-                <MenuItem value="1">Jan</MenuItem>
-                <MenuItem value="2">Feb</MenuItem>
-                <MenuItem value="3">Mar</MenuItem>
-                <MenuItem value="4">Apr</MenuItem>
-                <MenuItem value="5">May</MenuItem>
-                <MenuItem value="6">Jun</MenuItem>
-                <MenuItem value="7">Jul</MenuItem>
-                <MenuItem value="8">Aug</MenuItem>
-                <MenuItem value="9">Sep</MenuItem>
-                <MenuItem value="10">Oct</MenuItem>
-                <MenuItem value="11">Nov</MenuItem>
-                <MenuItem value="12">Dec</MenuItem>
+                <MenuItem value="">MM</MenuItem>
+                <MenuItem value="1">1</MenuItem>
+                <MenuItem value="2">2</MenuItem>
+                <MenuItem value="3">3</MenuItem>
+                <MenuItem value="4">4</MenuItem>
+                <MenuItem value="5">5</MenuItem>
+                <MenuItem value="6">6</MenuItem>
+                <MenuItem value="7">7</MenuItem>
+                <MenuItem value="8">8</MenuItem>
+                <MenuItem value="9">9</MenuItem>
+                <MenuItem value="10">10</MenuItem>
+                <MenuItem value="11">11</MenuItem>
+                <MenuItem value="12">12</MenuItem>
               </Select>
               <Select
                 className={classes.filterYearInput}
@@ -1008,12 +1009,12 @@ const Library = () => {
                 size="small"
                 variant="outlined"
               >
-                <MenuItem value="">Year</MenuItem>
+                <MenuItem value="">YYYY</MenuItem>
                 {studyFiltersHook.availableYears.map(year => (
                   <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
                 ))}
               </Select>
-              <Typography className={classes.filterToText}>To</Typography>
+              <Typography className={classes.filterToText}>to</Typography>
               <Select
                 className={classes.filterMonthInput}
                 value={studyFiltersHook.tempDateToMonth}
@@ -1023,19 +1024,19 @@ const Library = () => {
                 size="small"
                 variant="outlined"
               >
-                <MenuItem value="">Month</MenuItem>
-                <MenuItem value="1">Jan</MenuItem>
-                <MenuItem value="2">Feb</MenuItem>
-                <MenuItem value="3">Mar</MenuItem>
-                <MenuItem value="4">Apr</MenuItem>
-                <MenuItem value="5">May</MenuItem>
-                <MenuItem value="6">Jun</MenuItem>
-                <MenuItem value="7">Jul</MenuItem>
-                <MenuItem value="8">Aug</MenuItem>
-                <MenuItem value="9">Sep</MenuItem>
-                <MenuItem value="10">Oct</MenuItem>
-                <MenuItem value="11">Nov</MenuItem>
-                <MenuItem value="12">Dec</MenuItem>
+                <MenuItem value="">MM</MenuItem>
+                <MenuItem value="1">1</MenuItem>
+                <MenuItem value="2">2</MenuItem>
+                <MenuItem value="3">3</MenuItem>
+                <MenuItem value="4">4</MenuItem>
+                <MenuItem value="5">5</MenuItem>
+                <MenuItem value="6">6</MenuItem>
+                <MenuItem value="7">7</MenuItem>
+                <MenuItem value="8">8</MenuItem>
+                <MenuItem value="9">9</MenuItem>
+                <MenuItem value="10">10</MenuItem>
+                <MenuItem value="11">11</MenuItem>
+                <MenuItem value="12">12</MenuItem>
               </Select>
               <Select
                 className={classes.filterYearInput}
@@ -1046,7 +1047,7 @@ const Library = () => {
                 size="small"
                 variant="outlined"
               >
-                <MenuItem value="">Year</MenuItem>
+                <MenuItem value="">YYYY</MenuItem>
                 {studyFiltersHook.availableYears.map(year => (
                   <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
                 ))}
@@ -1169,11 +1170,6 @@ const Library = () => {
         className={classes.modalityPopover}
         disableAutoFocus
         disableEnforceFocus
-        PaperProps={{
-          style: {
-            width: studyFiltersHook.modalityAnchorEl?.offsetWidth || 'auto',
-          },
-        }}
       >
         <FormControl component="fieldset" fullWidth>
           <FormGroup>
