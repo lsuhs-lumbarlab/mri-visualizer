@@ -763,37 +763,83 @@ const Library = () => {
             {/* Right side - DOB Filter */}
             <Box className={classes.filterRight}>
               <Typography className={classes.filterLabel}>Birth year:</Typography>
-              <TextField
+              <Select
                 className={classes.filterInput}
                 variant="outlined"
                 size="small"
-                type="number"
-                placeholder="Min Year"
+                displayEmpty
                 value={patientFiltersHook.tempDobFrom}
                 onChange={patientFiltersHook.handleDobFromChange}
-                onBlur={patientFiltersHook.handleDobFromBlur}
                 disabled={isLoading || patients.length === 0}
-                inputProps={{
-                  min: 1900,
-                  max: new Date().getFullYear(),
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300,
+                    },
+                  },
                 }}
-              />
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return <span style={{ color: '#999' }}>YYYY</span>;
+                  }
+                  return selected;
+                }}
+              >
+                <MenuItem value="">
+                  <em>YYYY</em>
+                </MenuItem>
+                {(() => {
+                  const years = [];
+                  const currentYear = new Date().getFullYear();
+                  for (let year = 1900; year <= currentYear; year++) {
+                    years.push(
+                      <MenuItem key={year} value={year.toString()}>
+                        {year}
+                      </MenuItem>
+                    );
+                  }
+                  return years;
+                })()}
+              </Select>
               <Typography className={classes.filterToText}>to</Typography>
-              <TextField
+              <Select
                 className={classes.filterInput}
                 variant="outlined"
                 size="small"
-                type="number"
-                placeholder="Max Year"
+                displayEmpty
                 value={patientFiltersHook.tempDobTo}
                 onChange={patientFiltersHook.handleDobToChange}
-                onBlur={patientFiltersHook.handleDobToBlur}
                 disabled={isLoading || patients.length === 0}
-                inputProps={{
-                  min: 1900,
-                  max: new Date().getFullYear(),
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300,
+                    },
+                  },
                 }}
-              />
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return <span style={{ color: '#999' }}>YYYY</span>;
+                  }
+                  return selected;
+                }}
+              >
+                <MenuItem value="">
+                  <em>YYYY</em>
+                </MenuItem>
+                {(() => {
+                  const years = [];
+                  const currentYear = new Date().getFullYear();
+                  for (let year = 1900; year <= currentYear; year++) {
+                    years.push(
+                      <MenuItem key={year} value={year.toString()}>
+                        {year}
+                      </MenuItem>
+                    );
+                  }
+                  return years;
+                })()}
+              </Select>
               <Button
                 className={classes.filterButton}
                 onClick={patientFiltersHook.handleApplyDobFilter}
