@@ -45,20 +45,6 @@ export const useStudyFilters = (selectedPatient, searchQuery) => {
   const [tempDateFrom, setTempDateFrom] = useState(null);
   const [tempDateTo, setTempDateTo] = useState(null);
   
-  // Clear study search and filters when selected patient changes
-  useEffect(() => {
-    // Clear study date filter when switching patients
-    setTempDateFrom(null);
-    setTempDateTo(null);
-    setStudyFilters({
-      dateFromMonth: null,
-      dateFromYear: null,
-      dateToMonth: null,
-      dateToYear: null,
-    });
-    // Modality filter will auto-reset via availableModalities useEffect
-  }, [selectedPatient]);
-  
   // Get available years from selected patient's studies
   const availableYears = useMemo(() => {
     if (!selectedPatient || selectedPatient.studies.length === 0) return [];
