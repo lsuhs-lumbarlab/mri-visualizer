@@ -189,6 +189,11 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     gap: theme.spacing(1),
   },
+  filterMiddle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
   filterLabel: {
     color: theme.palette.text.secondary,
     fontSize: '0.875rem',
@@ -757,7 +762,7 @@ const Library = () => {
             
             {/* Right side - DOB Filter */}
             <Box className={classes.filterRight}>
-              <Typography className={classes.filterLabel}>Date of Birth:</Typography>
+              <Typography className={classes.filterLabel}>Birth year:</Typography>
               <TextField
                 className={classes.filterInput}
                 variant="outlined"
@@ -844,7 +849,7 @@ const Library = () => {
                           {patient.name}
                         </Typography>
                         <Typography className={classes.phiInfo}>
-                          DOB: {patient.dob}
+                          Date of Birth: {patient.dob}
                         </Typography>
                         <Typography className={classes.phiInfo}>
                           Patient ID: {patient.phiSummary.patientId}
@@ -966,8 +971,8 @@ const Library = () => {
               </Tooltip>
             </Box>
             
-            {/* Study date filter - right aligned */}
-            <Box className={classes.filterRight}>
+            {/* Modality filter - middle */}
+            <Box className={classes.filterMiddle}>
               <Typography className={classes.filterLabel}>Modality:</Typography>
               
               {/* Modality filter dropdown */}
@@ -983,8 +988,11 @@ const Library = () => {
                   {studyFiltersHook.modalityFilterLabel}
                 </span>
               </Button>
-              
-              <Typography className={classes.filterLabel}>Study Date:</Typography>
+            </Box>
+            
+            {/* Study date filter - right */}
+            <Box className={classes.filterRight}>
+              <Typography className={classes.filterLabel}>Study date:</Typography>
               <KeyboardDatePicker
                 className={classes.filterDatePicker}
                 views={['year', 'month']}
