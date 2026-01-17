@@ -1063,9 +1063,6 @@ const Library = () => {
                 autoOk
                 placeholder="MM/YYYY"
                 keyboardIcon={<Icon path={mdiCalendar} size={0.9} />}
-                KeyboardButtonProps={{
-                  'aria-label': 'change from date',
-                }}
                 InputProps={{
                   readOnly: true,
                   onClick: (e) => {
@@ -1091,9 +1088,6 @@ const Library = () => {
                 autoOk
                 placeholder="MM/YYYY"
                 keyboardIcon={<Icon path={mdiCalendar} size={0.9} />}
-                KeyboardButtonProps={{
-                  'aria-label': 'change to date',
-                }}
                 InputProps={{
                   readOnly: true,
                   onClick: (e) => {
