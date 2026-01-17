@@ -171,7 +171,7 @@ const useStyles = makeStyles((theme) => ({
       backgroundColor: theme.palette.background.default,
     },
   },
-  sortContainer: {
+  sortFilterContainer: {
     padding: theme.spacing(1.5, 2, 0),
     display: 'flex',
     alignItems: 'center',
@@ -209,18 +209,28 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   filterDatePicker: {
-    width: 130,
+    width: 115,
     '& .MuiOutlinedInput-root': {
       backgroundColor: theme.palette.background.default,
       paddingRight: 0,
+      cursor: 'pointer',
     },
     '& .MuiOutlinedInput-input': {
       padding: theme.spacing(1, 1),
       paddingRight: 0,
       fontSize: '0.875rem',
+      cursor: 'pointer',
     },
     '& .MuiInputBase-root': {
       fontSize: '0.875rem',
+    },
+    '& .MuiIconButton-root': {
+      pointerEvents: 'none',
+      padding: 0,
+      marginRight: '10px',
+      '&:hover': {
+        backgroundColor: 'transparent',
+      },
     },
   },
   filterToText: {
@@ -696,7 +706,7 @@ const Library = () => {
           </Box>
           
           {/* Patient sort and filter controls */}
-          <Box className={classes.sortContainer}>
+          <Box className={classes.sortFilterContainer}>
             {/* Left side - Sort controls */}
             <Box className={classes.sortLeft}>
               <Typography className={classes.sortLabel}>Sort by:</Typography>
@@ -908,7 +918,7 @@ const Library = () => {
           </Box>
           
           {/* Study sort controls */}
-          <Box className={classes.sortContainer}>
+          <Box className={classes.sortFilterContainer}>
             <Box className={classes.sortLeft}>
               <Typography className={classes.sortLabel}>Sort by:</Typography>
               <Select
@@ -992,6 +1002,13 @@ const Library = () => {
                 KeyboardButtonProps={{
                   'aria-label': 'change from date',
                 }}
+                InputProps={{
+                  readOnly: true,
+                  onClick: (e) => {
+                    const iconButton = e.currentTarget.parentElement.querySelector('.MuiIconButton-root');
+                    if (iconButton) iconButton.click();
+                  },
+                }}
               />
               <Typography className={classes.filterToText}>to</Typography>
               <KeyboardDatePicker
@@ -1011,6 +1028,13 @@ const Library = () => {
                 KeyboardButtonProps={{
                   'aria-label': 'change to date',
                 }}
+                InputProps={{
+                  readOnly: true,
+                  onClick: (e) => {
+                    const iconButton = e.currentTarget.parentElement.querySelector('.MuiIconButton-root');
+                    if (iconButton) iconButton.click();
+                  },
+                }}
               />
               <Button
                 className={classes.filterButton}
@@ -1018,7 +1042,6 @@ const Library = () => {
                 disabled={
                   !selectedPatient || 
                   selectedPatient.studies.length === 0 ||
-                  // Both fields empty
                   (!studyFiltersHook.tempDateFrom && !studyFiltersHook.tempDateTo)
                 }
                 size="small"
