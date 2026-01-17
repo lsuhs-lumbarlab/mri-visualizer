@@ -213,6 +213,22 @@ const useStyles = makeStyles((theme) => ({
       fontSize: '0.875rem',
     },
   },
+  yearSelect: {
+    width: 95,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+    '& .MuiSelect-select': {
+      padding: theme.spacing(1, 1),
+      fontSize: '0.875rem',
+    },
+  },
+  yearSelectPlaceholder: {
+    color: '#999',
+  },
+  yearSelectMenu: {
+    maxHeight: 300,
+  },
   filterDatePicker: {
     width: 115,
     '& .MuiOutlinedInput-root': {
@@ -352,6 +368,20 @@ const useStyles = makeStyles((theme) => ({
     borderTop: `1px solid ${theme.palette.divider}`,
   },
 }));
+
+// Helper function to generate year menu items
+const generateYearMenuItems = () => {
+  const years = [];
+  const currentYear = new Date().getFullYear();
+  for (let year = 1900; year <= currentYear; year++) {
+    years.push(
+      <MenuItem key={year} value={year.toString()}>
+        {year}
+      </MenuItem>
+    );
+  }
+  return years;
+};
 
 const Library = () => {
   const classes = useStyles();
@@ -764,7 +794,7 @@ const Library = () => {
             <Box className={classes.filterRight}>
               <Typography className={classes.filterLabel}>Birth year:</Typography>
               <Select
-                className={classes.filterInput}
+                className={classes.yearSelect}
                 variant="outlined"
                 size="small"
                 displayEmpty
@@ -780,7 +810,7 @@ const Library = () => {
                 }}
                 renderValue={(selected) => {
                   if (!selected) {
-                    return <span style={{ color: '#999' }}>YYYY</span>;
+                    return <span className={classes.yearSelectPlaceholder}>YYYY</span>;
                   }
                   return selected;
                 }}
@@ -788,22 +818,11 @@ const Library = () => {
                 <MenuItem value="">
                   <em>YYYY</em>
                 </MenuItem>
-                {(() => {
-                  const years = [];
-                  const currentYear = new Date().getFullYear();
-                  for (let year = 1900; year <= currentYear; year++) {
-                    years.push(
-                      <MenuItem key={year} value={year.toString()}>
-                        {year}
-                      </MenuItem>
-                    );
-                  }
-                  return years;
-                })()}
+                {generateYearMenuItems()}
               </Select>
               <Typography className={classes.filterToText}>to</Typography>
               <Select
-                className={classes.filterInput}
+                className={classes.yearSelect}
                 variant="outlined"
                 size="small"
                 displayEmpty
@@ -819,7 +838,7 @@ const Library = () => {
                 }}
                 renderValue={(selected) => {
                   if (!selected) {
-                    return <span style={{ color: '#999' }}>YYYY</span>;
+                    return <span className={classes.yearSelectPlaceholder}>YYYY</span>;
                   }
                   return selected;
                 }}
@@ -827,18 +846,7 @@ const Library = () => {
                 <MenuItem value="">
                   <em>YYYY</em>
                 </MenuItem>
-                {(() => {
-                  const years = [];
-                  const currentYear = new Date().getFullYear();
-                  for (let year = 1900; year <= currentYear; year++) {
-                    years.push(
-                      <MenuItem key={year} value={year.toString()}>
-                        {year}
-                      </MenuItem>
-                    );
-                  }
-                  return years;
-                })()}
+                {generateYearMenuItems()}
               </Select>
               <Button
                 className={classes.filterButton}
