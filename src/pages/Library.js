@@ -998,6 +998,8 @@ const Library = () => {
                 views={['year', 'month']}
                 format="MM/yyyy"
                 openTo="year"
+                minDate={new Date(1900, 0, 1)}
+                maxDate={new Date()}
                 value={studyFiltersHook.tempDateFrom}
                 onChange={(date) => studyFiltersHook.setTempDateFrom(date)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
@@ -1024,6 +1026,8 @@ const Library = () => {
                 views={['year', 'month']}
                 format="MM/yyyy"
                 openTo="year"
+                minDate={new Date(1900, 0, 1)}
+                maxDate={new Date()}
                 value={studyFiltersHook.tempDateTo}
                 onChange={(date) => studyFiltersHook.setTempDateTo(date)}
                 disabled={!selectedPatient || selectedPatient.studies.length === 0}
